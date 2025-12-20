@@ -69,9 +69,7 @@ const Month: React.FC<{ month: number; year: number; dayStatusMap: Record<string
           if (!date) return <div key={idx} className="h-8" />;
           const dateStr = date.toISOString().split('T')[0];
           
-          // Request: Red if no users signed up OR partial users.
-          // dayStatusMap only contains entries for dates that HAVE submissions.
-          // If no submission exists, map[dateStr] is undefined.
+          // Request: Red if no users signed up OR partial users (<6).
           const status = dayStatusMap[dateStr] || DayStatus.RED;
           
           let statusStyles = "";
@@ -80,7 +78,7 @@ const Month: React.FC<{ month: number; year: number; dayStatusMap: Record<string
           } else if (status === DayStatus.YELLOW) {
             statusStyles = "bg-amber-950/40 border-amber-600/50 text-amber-400 hover:bg-amber-900/60 hover:border-amber-500";
           } else {
-            // RED is the default now
+            // RED: Default for < 6 users or zero users
             statusStyles = "bg-rose-950/20 border-rose-900/50 text-rose-800 hover:bg-rose-950/40 hover:border-rose-700";
           }
           
