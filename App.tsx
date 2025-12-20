@@ -28,12 +28,13 @@ const App: React.FC = () => {
       if (error) {
         console.error('Error fetching availability:', error);
       } else if (data) {
-        // Map back from snake_case to camelCase for the frontend types
+        // If columns in Supabase are camelCase, no mapping is needed.
+        // If they are lowercase (isallday), we check both.
         const mappedData = data.map((item: any) => ({
           ...item,
-          isAllDay: item.is_all_day,
-          startTime: item.start_time,
-          endTime: item.end_time
+          isAllDay: item.isAllDay !== undefined ? item.isAllDay : item.isallday,
+          startTime: item.startTime !== undefined ? item.startTime : item.starttime,
+          endTime: item.endTime !== undefined ? item.endTime : item.endtime
         }));
         setSubmissions(mappedData as AvailabilitySubmission[]);
       }
@@ -58,16 +59,17 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
-    // Use snake_case column names for the database
+    // Reverting to camelCase columns to resolve the "is_all_day" not found error.
+    // If your Supabase table uses different names, they must be updated here.
     const { error } = await supabase
       .from('availability')
       .upsert({
         name: submission.name,
         date: submission.date,
         timezone: submission.timezone,
-        is_all_day: submission.isAllDay,
-        start_time: submission.startTime,
-        end_time: submission.endTime,
+        isAllDay: submission.isAllDay,
+        startTime: submission.startTime,
+        endTime: submission.endTime,
         comments: submission.comments
       }, { onConflict: 'date,name' });
 
