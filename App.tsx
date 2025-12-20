@@ -28,13 +28,12 @@ const App: React.FC = () => {
       if (error) {
         console.error('Error fetching availability:', error);
       } else if (data) {
-        // If columns in Supabase are camelCase, no mapping is needed.
-        // If they are lowercase (isallday), we check both.
+        // Map from snake_case database columns to camelCase frontend types
         const mappedData = data.map((item: any) => ({
           ...item,
-          isAllDay: item.isAllDay !== undefined ? item.isAllDay : item.isallday,
-          startTime: item.startTime !== undefined ? item.startTime : item.starttime,
-          endTime: item.endTime !== undefined ? item.endTime : item.endtime
+          isAllDay: item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
+          startTime: item.start_time ?? item.startTime ?? item.starttime ?? '00:00',
+          endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59'
         }));
         setSubmissions(mappedData as AvailabilitySubmission[]);
       }
@@ -59,23 +58,23 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
-    // Reverting to camelCase columns to resolve the "is_all_day" not found error.
-    // If your Supabase table uses different names, they must be updated here.
+    // Use snake_case for the database columns to be compatible with standard Postgres/Supabase setups
     const { error } = await supabase
       .from('availability')
       .upsert({
         name: submission.name,
         date: submission.date,
         timezone: submission.timezone,
-        isAllDay: submission.isAllDay,
-        startTime: submission.startTime,
-        endTime: submission.endTime,
+        is_all_day: submission.isAllDay,
+        start_time: submission.startTime,
+        end_time: submission.endTime,
         comments: submission.comments
       }, { onConflict: 'date,name' });
 
     if (error) {
       console.error('Error saving to Supabase:', error);
       alert('The dice roll failed: ' + error.message);
+      // Revert if error
       setSubmissions(prevSubmissions);
     }
 
@@ -107,7 +106,6 @@ const App: React.FC = () => {
     Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
       const distinctNames = new Set(subs.map(s => s.name));
       
-      // LOGIC: Red if 0-5 users, Yellow if 6 users (limited hours), Green if 6 users (all full day)
       if (distinctNames.size === CHARACTER_NAMES.length) {
         const allDayCommitment = subs.every(s => s.isAllDay);
         map[dateStr] = allDayCommitment ? DayStatus.GREEN : DayStatus.YELLOW;
