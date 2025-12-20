@@ -28,7 +28,14 @@ const App: React.FC = () => {
       if (error) {
         console.error('Error fetching availability:', error);
       } else if (data) {
-        setSubmissions(data as AvailabilitySubmission[]);
+        // Map back from snake_case to camelCase for the frontend types
+        const mappedData = data.map((item: any) => ({
+          ...item,
+          isAllDay: item.is_all_day,
+          startTime: item.start_time,
+          endTime: item.end_time
+        }));
+        setSubmissions(mappedData as AvailabilitySubmission[]);
       }
     } catch (e) {
       console.error('Fetch error:', e);
@@ -51,15 +58,16 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
+    // Use snake_case column names for the database
     const { error } = await supabase
       .from('availability')
       .upsert({
         name: submission.name,
         date: submission.date,
         timezone: submission.timezone,
-        isAllDay: submission.isAllDay,
-        startTime: submission.startTime,
-        endTime: submission.endTime,
+        is_all_day: submission.isAllDay,
+        start_time: submission.startTime,
+        end_time: submission.endTime,
         comments: submission.comments
       }, { onConflict: 'date,name' });
 
@@ -96,13 +104,12 @@ const App: React.FC = () => {
 
     Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
       const distinctNames = new Set(subs.map(s => s.name));
-      // Logic: If all 6 users signed up
+      
+      // LOGIC: Red if 0-5 users, Yellow if 6 users (limited hours), Green if 6 users (all full day)
       if (distinctNames.size === CHARACTER_NAMES.length) {
         const allDayCommitment = subs.every(s => s.isAllDay);
-        // Green if everyone is All Day, Yellow if at least one has limited hours
         map[dateStr] = allDayCommitment ? DayStatus.GREEN : DayStatus.YELLOW;
       } else {
-        // Red if 1-5 users signed up
         map[dateStr] = DayStatus.RED;
       }
     });
@@ -147,7 +154,7 @@ const App: React.FC = () => {
              <p className="text-stone-400 text-sm font-medieval">
                 {showCopyFeedback 
                   ? "The party link is in your inventory! Send the URL in your browser address bar to your companions."
-                  : "Each companion must register their presence. A date turns Gold if all 6 are free all day, and Yellow if hours differ. Red indicates missing companions."}
+                  : "The Weave is active. Red indicates missing companions (0-5). Yellow means all 6 are here but some have limited hours. Gold is full 6-person full-day harmony."}
              </p>
           </div>
         </div>
@@ -168,9 +175,9 @@ const App: React.FC = () => {
                   <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Current Era</p>
                 </div>
                 <div className="flex gap-4 text-[10px] font-medieval uppercase text-stone-500">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> All 6 (All Day)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> All 6 (Limited)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> 0-5 Users</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full Party (All Day)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Full Party (Limited)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Missing Members</div>
                 </div>
               </div>
               <CalendarGrid 
