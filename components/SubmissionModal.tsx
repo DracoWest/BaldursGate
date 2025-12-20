@@ -34,7 +34,6 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({ date, onClose, onSubm
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md overflow-y-auto">
       <div className="bg-[#1a1a1a] border-2 border-[#b08d57] w-full max-w-md p-8 rounded-lg shadow-[0_0_80px_rgba(0,0,0,1)] relative my-8">
-        {/* Decorative corner element */}
         <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-[#b08d57]/40 pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-[#b08d57]/40 pointer-events-none"></div>
 
