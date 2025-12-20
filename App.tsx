@@ -144,7 +144,7 @@ const App: React.FC = () => {
              <p className="text-stone-400 text-sm font-medieval">
                 {showCopyFeedback 
                   ? "The party link is in your inventory! Send the URL in your browser address bar to your companions."
-                  : "Each companion must register their presence for a date to turn Gold. Red means missing companions."}
+                  : "Each companion must register their presence. A date turns Gold if everyone is free all day, and Yellow if hours differ."}
              </p>
           </div>
         </div>
@@ -162,12 +162,12 @@ const App: React.FC = () => {
               <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                   <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">2025</h2>
-                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">The Current Era</p>
+                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Current Era</p>
                 </div>
                 <div className="flex gap-4 text-[10px] font-medieval uppercase text-stone-500">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full Party</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> All Day</div>
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Limited Time</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Missing</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Missing People</div>
                 </div>
               </div>
               <CalendarGrid 
