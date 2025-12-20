@@ -65,7 +65,7 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error saving to Supabase:', error);
-      alert('Failed to seal the commitment: ' + error.message);
+      alert('The dice roll failed: ' + error.message);
       setSubmissions(prevSubmissions);
     }
 
@@ -81,7 +81,7 @@ const App: React.FC = () => {
     const shareUrl = window.location.href;
     navigator.clipboard.writeText(shareUrl).then(() => {
       setShowCopyFeedback(true);
-      setTimeout(() => setShowCopyFeedback(false), 3000);
+      setTimeout(() => setShowCopyFeedback(false), 4000);
     });
   };
 
@@ -108,47 +108,68 @@ const App: React.FC = () => {
   }, [submissions]);
 
   return (
-    <div className="min-h-screen pb-20 overflow-x-hidden">
-      <header className="py-12 text-center border-b border-stone-800 bg-stone-950/80 backdrop-blur shadow-2xl relative">
-        <h1 className="text-5xl md:text-7xl font-cinzel text-[#b08d57] parchment-glow mb-2">
-          DracoWest
-        </h1>
-        <p className="font-medieval text-stone-500 uppercase tracking-widest text-sm mb-8">Baldur's Gate Availability</p>
+    <div className="min-h-screen pb-24">
+      <header className="pt-16 pb-12 text-center relative px-4 overflow-hidden">
+        {/* Background visual flair */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-[#b08d57]/5 blur-[120px] -z-10 rounded-full"></div>
         
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="flex flex-wrap justify-center gap-4 px-4">
+        <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow mb-4 tracking-tighter">
+          DRACOWEST
+        </h1>
+        <div className="flex items-center justify-center gap-4 mb-10">
+          <div className="h-px w-12 bg-stone-800"></div>
+          <p className="font-medieval text-stone-500 uppercase tracking-[0.3em] text-xs">The 2025-2026 Chronicles</p>
+          <div className="h-px w-12 bg-stone-800"></div>
+        </div>
+        
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-wrap justify-center gap-4">
             <button 
               onClick={generateShareLink}
-              className="bg-[#b08d57] hover:bg-[#8c7045] text-stone-950 px-8 py-3 rounded-full font-bold transition-all shadow-lg flex items-center gap-2 transform hover:scale-105 active:scale-95"
+              className="group relative px-8 py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold rounded shadow-[0_10px_20px_-10px_rgba(176,141,87,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0"
             >
-              {showCopyFeedback ? '✨ Copied! ✨' : '🔗 Copy Shareable Link'}
+              <span className="font-cinzel flex items-center gap-2">
+                {showCopyFeedback ? '✨ LINK SEALED ✨' : '🔗 SHARE THIS QUEST'}
+              </span>
             </button>
             <button 
               onClick={() => fetchSubmissions(true)}
               disabled={isRefreshing}
-              className="bg-stone-800 hover:bg-stone-700 text-stone-300 px-6 py-3 rounded-full font-bold transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-8 py-4 bg-stone-900 border border-stone-700 text-stone-300 hover:text-white hover:border-stone-500 font-bold rounded transition-all flex items-center gap-2 disabled:opacity-50"
             >
-              {isRefreshing ? '⌛ Consulting...' : '🔄 Refresh Weave'}
+              <span className="font-cinzel">{isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}</span>
             </button>
           </div>
-          {showCopyFeedback && (
-            <p className="text-emerald-500 font-medieval animate-pulse text-sm">Link secured for your party!</p>
-          )}
+          
+          <div className="max-w-md bg-stone-900/50 p-4 rounded-lg border border-stone-800/50 backdrop-blur-sm">
+             <p className="text-stone-400 text-sm font-medieval">
+                {showCopyFeedback 
+                  ? "The party link is in your inventory! Send the URL in your browser address bar to your companions."
+                  : "Each companion must register their presence for a date to turn Gold. Red means missing companions."}
+             </p>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 mt-8">
+      <main className="max-w-7xl mx-auto px-6 space-y-32">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-             <div className="w-12 h-12 border-4 border-[#b08d57] border-t-transparent rounded-full animate-spin"></div>
-             <p className="font-cinzel text-[#b08d57] animate-pulse">Consulting the Elders of the Database...</p>
+          <div className="flex flex-col items-center justify-center py-32">
+             <div className="w-16 h-16 border-2 border-[#b08d57] border-t-transparent rounded-full animate-spin mb-6"></div>
+             <p className="font-cinzel text-[#b08d57] animate-pulse tracking-widest uppercase text-sm">Deciphering Ancient Availability...</p>
           </div>
         ) : (
-          <div className="space-y-20">
-            <section>
-              <div className="flex items-center justify-between border-b border-stone-800 mb-8">
-                <h2 className="text-3xl font-cinzel text-[#b08d57]/70 pb-4">Remainder of 2025</h2>
-                <span className="text-stone-600 font-medieval text-sm italic">The Current Age</span>
+          <>
+            <section className="relative">
+              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">Act I: 2025</h2>
+                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">The Current Era</p>
+                </div>
+                <div className="flex gap-4 text-[10px] font-medieval uppercase text-stone-500">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full Party</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Limited Time</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Missing</div>
+                </div>
               </div>
               <CalendarGrid 
                 startMonth={currentMonth} 
@@ -159,10 +180,12 @@ const App: React.FC = () => {
               />
             </section>
 
-            <section>
-              <div className="flex items-center justify-between border-b border-stone-800 mb-8">
-                <h2 className="text-3xl font-cinzel text-[#b08d57]/70 pb-4">Full Year 2026</h2>
-                <span className="text-stone-600 font-medieval text-sm italic">Future Quests</span>
+            <section className="relative pb-24">
+              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between">
+                <div>
+                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">Act II: 2026</h2>
+                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Future Horizons</p>
+                </div>
               </div>
               <CalendarGrid 
                 startMonth={0} 
@@ -172,7 +195,7 @@ const App: React.FC = () => {
                 onDayClick={handleDayClick} 
               />
             </section>
-          </div>
+          </>
         )}
       </main>
 
