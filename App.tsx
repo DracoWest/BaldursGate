@@ -96,10 +96,13 @@ const App: React.FC = () => {
 
     Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
       const distinctNames = new Set(subs.map(s => s.name));
+      // Logic: If all 6 users signed up
       if (distinctNames.size === CHARACTER_NAMES.length) {
         const allDayCommitment = subs.every(s => s.isAllDay);
+        // Green if everyone is All Day, Yellow if at least one has limited hours
         map[dateStr] = allDayCommitment ? DayStatus.GREEN : DayStatus.YELLOW;
       } else {
+        // Red if 1-5 users signed up
         map[dateStr] = DayStatus.RED;
       }
     });
@@ -144,7 +147,7 @@ const App: React.FC = () => {
              <p className="text-stone-400 text-sm font-medieval">
                 {showCopyFeedback 
                   ? "The party link is in your inventory! Send the URL in your browser address bar to your companions."
-                  : "Each companion must register their presence. A date turns Gold if everyone is free all day, and Yellow if hours differ."}
+                  : "Each companion must register their presence. A date turns Gold if all 6 are free all day, and Yellow if hours differ. Red indicates missing companions."}
              </p>
           </div>
         </div>
@@ -165,9 +168,9 @@ const App: React.FC = () => {
                   <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Current Era</p>
                 </div>
                 <div className="flex gap-4 text-[10px] font-medieval uppercase text-stone-500">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> All Day</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Limited Time</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Missing People</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> All 6 (All Day)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> All 6 (Limited)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> 0-5 Users</div>
                 </div>
               </div>
               <CalendarGrid 
