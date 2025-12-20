@@ -110,7 +110,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen pb-24">
       <header className="pt-16 pb-12 text-center relative px-4 overflow-hidden">
-        {/* Background visual flair */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-[#b08d57]/5 blur-[120px] -z-10 rounded-full"></div>
         
         <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow mb-4 tracking-tighter">
@@ -162,8 +161,8 @@ const App: React.FC = () => {
             <section className="relative">
               <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">Act I: 2025</h2>
-                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">The Current Era</p>
+                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">2025</h2>
+                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">The Current Chapter</p>
                 </div>
                 <div className="flex gap-4 text-[10px] font-medieval uppercase text-stone-500">
                   <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full Party</div>
@@ -183,7 +182,7 @@ const App: React.FC = () => {
             <section className="relative pb-24">
               <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between">
                 <div>
-                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">Act II: 2026</h2>
+                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">2026</h2>
                   <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Future Horizons</p>
                 </div>
               </div>
