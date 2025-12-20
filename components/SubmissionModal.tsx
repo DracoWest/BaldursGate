@@ -50,7 +50,7 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({ date, onClose, onSubm
               onChange={e => setName(e.target.value as any)} 
               className="w-full bg-[#d4c3a1] border border-stone-800 text-black p-3 rounded font-cinzel focus:outline-none focus:ring-2 focus:ring-[#b08d57]/50 transition-all"
             >
-              <option value="">Choose Companion</option>
+              <option value="" className="text-black">Choose Companion</option>
               {CHARACTER_NAMES.map(n => <option key={n} value={n} className="text-black">{n}</option>)}
             </select>
           </div>
