@@ -31,7 +31,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-12">
       {months.map(({ month, year }) => (
         <Month 
           key={`${month}-${year}`} 
@@ -53,28 +53,42 @@ const Month: React.FC<{ month: number; year: number; dayStatusMap: Record<string
   for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
 
   return (
-    <div className="bg-stone-900/30 p-4 rounded-xl border border-stone-800">
-      <h3 className="text-xl font-cinzel text-[#b08d57] mb-4 text-center">{MONTH_NAMES[month]} {year}</h3>
-      <div className="grid grid-cols-7 gap-1 text-center mb-2">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d} className="text-xs text-stone-600 font-bold">{d}</div>)}
+    <div className="group">
+      <h3 className="text-lg font-cinzel text-stone-500 group-hover:text-[#b08d57] transition-colors mb-4 pl-1 border-l-2 border-[#b08d57]/20 group-hover:border-[#b08d57]/60">
+        {MONTH_NAMES[month]} <span className="text-[10px] opacity-40 ml-1">{year}</span>
+      </h3>
+      <div className="grid grid-cols-7 gap-1 text-center mb-3">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+          <div key={d} className="text-[10px] text-stone-600 font-medieval font-bold uppercase tracking-tighter">
+            {d}
+          </div>
+        ))}
       </div>
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1.5">
         {days.map((date, idx) => {
-          if (!date) return <div key={idx} />;
+          if (!date) return <div key={idx} className="h-8" />;
           const dateStr = date.toISOString().split('T')[0];
           const status = dayStatusMap[dateStr] || DayStatus.NONE;
-          let bgColor = "bg-rose-950/40 border-rose-500/20";
-          if (status === DayStatus.GREEN) bgColor = "bg-emerald-900/60 border-emerald-400";
-          if (status === DayStatus.YELLOW) bgColor = "bg-amber-800/60 border-amber-400";
           
+          let statusStyles = "bg-stone-900 border-stone-800 text-stone-600 hover:border-stone-600";
+          if (status === DayStatus.GREEN) {
+            statusStyles = "bg-emerald-950/40 border-emerald-500/50 text-emerald-400 hover:bg-emerald-900/60 hover:border-emerald-400";
+          } else if (status === DayStatus.YELLOW) {
+            statusStyles = "bg-amber-950/40 border-amber-600/50 text-amber-400 hover:bg-amber-900/60 hover:border-amber-500";
+          } else if (status === DayStatus.RED) {
+            statusStyles = "bg-rose-950/20 border-rose-900/50 text-rose-800 hover:bg-rose-950/40 hover:border-rose-700";
+          }
+          
+          const isToday = new Date().toDateString() === date.toDateString();
+
           return (
-            <div 
+            <button 
               key={idx} 
               onClick={() => onDayClick(date)}
-              className={`h-10 flex items-center justify-center rounded cursor-pointer border transition-all hover:scale-110 ${bgColor}`}
+              className={`h-9 flex items-center justify-center rounded-sm text-xs font-cinzel border transition-all hover:scale-110 active:scale-95 shadow-sm ${statusStyles} ${isToday ? 'ring-1 ring-[#b08d57] ring-offset-2 ring-offset-black' : ''}`}
             >
               {date.getDate()}
-            </div>
+            </button>
           );
         })}
       </div>
