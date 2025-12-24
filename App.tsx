@@ -91,6 +91,7 @@ const App: React.FC = () => {
     });
 
     // We use camelCase keys here to match the columns in your Supabase table.
+    // Ensure your database columns are named exactly: isAllDay, startTime, endTime
     const { error } = await supabase
       .from('availability')
       .upsert({
@@ -105,7 +106,7 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error saving to Supabase:', error);
-      alert('The dice roll failed: ' + error.message + '\n\nPlease ensure your Supabase table columns match the keys in the code (isAllDay, startTime, endTime).');
+      alert('The dice roll failed: ' + error.message + '\n\nPlease ensure your Supabase table columns are named isAllDay, startTime, and endTime.');
       setSubmissions(prevSubmissions);
     }
 
