@@ -13,7 +13,7 @@ export interface AvailabilitySubmission {
 
 export enum DayStatus {
   NONE = 'none',
-  RED = 'red',
-  YELLOW = 'yellow',
-  GREEN = 'green'
+  ORANGE = 'orange', // 1-5 members
+  YELLOW = 'yellow', // 6 members, limited
+  GREEN = 'green'    // 6 members, all day
 }
