@@ -61,9 +61,9 @@ const App: React.FC = () => {
         // Robust mapping to handle various database column naming conventions
         const mappedData = data.map((item: any) => ({
           ...item,
-          isAllDay: item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
-          startTime: item.start_time ?? item.startTime ?? item.starttime ?? '00:00',
-          endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59'
+          isAllDay: item.isAllDay ?? item.is_all_day ?? item.isallday ?? true,
+          startTime: item.startTime ?? item.start_time ?? item.starttime ?? '00:00',
+          endTime: item.endTime ?? item.end_time ?? item.endtime ?? '23:59'
         }));
         setSubmissions(mappedData as AvailabilitySubmission[]);
       }
@@ -90,23 +90,22 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
-    // We use snake_case for the database columns as it is the Postgres/Supabase standard.
-    // If your table specifically uses camelCase, you would need to change these back.
+    // We use camelCase keys here to match the columns in your Supabase table.
     const { error } = await supabase
       .from('availability')
       .upsert({
         name: submission.name,
         date: submission.date,
         timezone: submission.timezone,
-        is_all_day: submission.isAllDay,
-        start_time: submission.startTime,
-        end_time: submission.endTime,
+        isAllDay: submission.isAllDay,
+        startTime: submission.startTime,
+        endTime: submission.endTime,
         comments: submission.comments
       }, { onConflict: 'date,name' });
 
     if (error) {
       console.error('Error saving to Supabase:', error);
-      alert('The dice roll failed: ' + error.message + '\n\nPlease check that your Supabase table has columns named: is_all_day, start_time, end_time');
+      alert('The dice roll failed: ' + error.message + '\n\nPlease ensure your Supabase table columns match the keys in the code (isAllDay, startTime, endTime).');
       setSubmissions(prevSubmissions);
     }
 
