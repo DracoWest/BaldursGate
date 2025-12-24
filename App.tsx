@@ -48,14 +48,10 @@ const App: React.FC = () => {
     else setIsLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('availability')
-        .select('*');
+      const { data, error } = await supabase.from('availability').select('*');
+      if (error) throw error;
 
-      if (error) {
-        console.error('Error fetching availability:', error);
-      } else if (data) {
-        // Robust mapping: Prioritize snake_case then fallback to others
+      if (data) {
         const mappedData = data.map((item: any) => ({
           id: item.id || Math.random().toString(36).substr(2, 9),
           name: item.name,
@@ -68,7 +64,7 @@ const App: React.FC = () => {
         }));
         setSubmissions(mappedData as AvailabilitySubmission[]);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Fetch error:', e);
     } finally {
       setIsLoading(false);
@@ -91,24 +87,35 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
-    // Explicitly using snake_case to match PostgREST/Supabase defaults
-    const payload = {
-      name: submission.name,
-      date: submission.date,
-      timezone: submission.timezone,
-      is_all_day: submission.isAllDay,
-      start_time: submission.startTime,
-      end_time: submission.endTime,
-      comments: submission.comments || ''
+    // TRY MULTIPLE COLUMN NAMING STRATEGIES
+    const basePayload = { 
+      name: submission.name, 
+      date: submission.date, 
+      timezone: submission.timezone, 
+      comments: submission.comments || '' 
     };
 
-    const { error } = await supabase
-      .from('availability')
-      .upsert(payload, { onConflict: 'date,name' });
+    const strategies = [
+      { ...basePayload, is_all_day: submission.isAllDay, start_time: submission.startTime, end_time: submission.endTime },
+      { ...basePayload, isallday: submission.isAllDay, starttime: submission.startTime, endtime: submission.endTime },
+      { ...basePayload, isAllDay: submission.isAllDay, startTime: submission.startTime, endTime: submission.endTime }
+    ];
 
-    if (error) {
-      console.error('Database Error:', error);
-      alert(`The Weave is blocked: ${error.message || 'Check column names in Supabase'}`);
+    let success = false;
+    let lastError = null;
+
+    for (const payload of strategies) {
+      const { error } = await supabase.from('availability').upsert(payload, { onConflict: 'date,name' });
+      if (!error) {
+        success = true;
+        break;
+      }
+      lastError = error;
+    }
+
+    if (!success) {
+      console.error('Final Save Error:', lastError);
+      alert(`The Weave is blocked. Error: ${lastError?.message || 'Check Supabase columns'}`);
       setSubmissions(prevSubmissions);
     }
 
@@ -118,6 +125,13 @@ const App: React.FC = () => {
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
+  };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      alert("Chronicles link copied to clipboard! Send it to your party.");
+    });
   };
 
   const dayStatusMap = useMemo(() => {
@@ -153,7 +167,6 @@ const App: React.FC = () => {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full opacity-50"></div>
         </div>
-
         <div className="w-full max-w-md z-10 text-center">
           <div className="mb-12 relative inline-block">
              <div className="w-24 h-24 mx-auto border-2 border-[#b08d57] rotate-45 flex items-center justify-center animate-gold mb-8">
@@ -162,7 +175,6 @@ const App: React.FC = () => {
              <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow mb-2 tracking-widest">DRACOWEST</h1>
              <p className="text-stone-500 font-medieval uppercase text-[10px] tracking-[0.4em]">Ancient Gateway</p>
           </div>
-
           <form onSubmit={handlePasscodeSubmit} className="space-y-6">
             <input 
               type="password"
@@ -174,10 +186,7 @@ const App: React.FC = () => {
               `}
               autoFocus
             />
-            <button 
-              type="submit"
-              className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded shadow-[0_0_20px_rgba(176,141,87,0.2)]"
-            >
+            <button type="submit" className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded">
               SPEAK INCANTATION
             </button>
           </form>
@@ -199,24 +208,23 @@ const App: React.FC = () => {
         
         <div className="flex flex-col items-center gap-6">
           <div className="flex flex-wrap justify-center gap-4">
-            <button 
-              onClick={() => fetchSubmissions(true)}
-              className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded font-cinzel transition-all disabled:opacity-50"
-              disabled={isRefreshing}
-            >
+            <button onClick={() => fetchSubmissions(true)} className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded font-cinzel" disabled={isRefreshing}>
               {isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}
             </button>
-            <button 
-              onClick={() => { localStorage.removeItem('dracowest_auth'); window.location.reload(); }}
-              className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded font-cinzel transition-all"
-            >
+            <button onClick={handleShare} className="px-10 py-4 bg-stone-900 border border-[#b08d57]/30 text-[#b08d57] hover:bg-stone-800 font-bold rounded font-cinzel transition-all">
+              SHARE LINK
+            </button>
+            <button onClick={() => { localStorage.removeItem('dracowest_auth'); window.location.reload(); }} className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded font-cinzel transition-all">
               LOG OUT
             </button>
           </div>
           <div className="max-w-md bg-stone-900/50 p-6 rounded-lg border border-stone-800/50 backdrop-blur-sm">
-             <p className="text-stone-400 text-sm font-medieval leading-relaxed">
-                <span className="text-rose-500">Red</span> is empty. <span className="text-orange-500">Orange</span> is partial party. <span className="text-amber-500">Yellow</span> is full party (limited). <span className="text-emerald-500">Green</span> is full party all day.
-             </p>
+             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-2">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">Full Party All Day</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">Full Party Limited</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">Partial Party</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">No Signups</span></div>
+             </div>
           </div>
         </div>
       </header>
@@ -230,41 +238,16 @@ const App: React.FC = () => {
         ) : (
           <>
             <section className="relative">
-              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">2025</h2>
-                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Current Era</p>
-                </div>
-                <div className="flex flex-wrap gap-4 text-[9px] font-medieval uppercase text-stone-500">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full (All Day)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Full (Limited)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-500/50 border border-orange-400"></div> Partial (1-5)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Deserted (0)</div>
-                </div>
+              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
+                <h2 className="text-4xl font-cinzel text-[#b08d57]">2025</h2>
               </div>
-              <CalendarGrid 
-                startMonth={currentMonth} 
-                startYear={2025} 
-                numMonths={12 - currentMonth} 
-                dayStatusMap={dayStatusMap} 
-                onDayClick={handleDayClick} 
-              />
+              <CalendarGrid startMonth={currentMonth} startYear={2025} numMonths={12 - currentMonth} dayStatusMap={dayStatusMap} onDayClick={handleDayClick} />
             </section>
-
             <section className="relative pb-24">
-              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50 flex flex-col md:flex-row md:items-end justify-between">
-                <div>
-                  <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">2026</h2>
-                  <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Future Horizons</p>
-                </div>
+              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
+                <h2 className="text-4xl font-cinzel text-[#b08d57]">2026</h2>
               </div>
-              <CalendarGrid 
-                startMonth={0} 
-                startYear={2026} 
-                numMonths={12} 
-                dayStatusMap={dayStatusMap} 
-                onDayClick={handleDayClick} 
-              />
+              <CalendarGrid startMonth={0} startYear={2026} numMonths={12} dayStatusMap={dayStatusMap} onDayClick={handleDayClick} />
             </section>
           </>
         )}
