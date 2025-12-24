@@ -89,8 +89,6 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
-    // We use camelCase keys here to match the columns in your Supabase table.
-    // Ensure your database columns are named exactly: isAllDay, startTime, endTime
     const { error } = await supabase
       .from('availability')
       .upsert({
@@ -105,7 +103,7 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Error saving to Supabase:', error);
-      alert('The dice roll failed: ' + error.message + '\n\nPlease ensure your Supabase table columns are named isAllDay, startTime, and endTime.');
+      alert('The dice roll failed: ' + error.message);
       setSubmissions(prevSubmissions);
     }
 
@@ -128,12 +126,15 @@ const App: React.FC = () => {
 
     Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
       const distinctNames = new Set(subs.map(s => s.name));
+      const count = distinctNames.size;
       
-      if (distinctNames.size === CHARACTER_NAMES.length) {
+      if (count === CHARACTER_NAMES.length) {
         const allDayCommitment = subs.every(s => s.isAllDay);
         map[dateStr] = allDayCommitment ? DayStatus.GREEN : DayStatus.YELLOW;
+      } else if (count > 0) {
+        map[dateStr] = DayStatus.ORANGE;
       } else {
-        map[dateStr] = DayStatus.RED;
+        map[dateStr] = DayStatus.NONE;
       }
     });
 
@@ -235,7 +236,7 @@ const App: React.FC = () => {
           
           <div className="max-w-md bg-stone-900/50 p-6 rounded-lg border border-stone-800/50 backdrop-blur-sm">
              <p className="text-stone-400 text-sm font-medieval leading-relaxed">
-                The Weave is active. Red indicates missing companions (0-5). Yellow means all 6 are here but some have limited hours. Gold is full 6-person full-day harmony. Click any day to update your availability.
+                The Weave is active. Red is deserted. Orange means some members are ready. Yellow is a full party with limited hours. Gold/Green is full party all day. Click any day to update your availability.
              </p>
           </div>
         </div>
@@ -255,10 +256,11 @@ const App: React.FC = () => {
                   <h2 className="text-4xl font-cinzel text-[#b08d57] mb-1">2025</h2>
                   <p className="text-stone-600 font-medieval uppercase text-xs tracking-widest">Current Era</p>
                 </div>
-                <div className="flex gap-4 text-[10px] font-medieval uppercase text-stone-500">
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full Party (All Day)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Full Party (Limited)</div>
-                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Missing Members</div>
+                <div className="flex flex-wrap gap-4 text-[9px] font-medieval uppercase text-stone-500">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50 border border-emerald-400"></div> Full (All Day)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500/50 border border-amber-400"></div> Full (Limited)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-orange-500/50 border border-orange-400"></div> Partial (1-5)</div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500/50 border border-rose-400"></div> Deserted (0)</div>
                 </div>
               </div>
               <CalendarGrid 
