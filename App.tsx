@@ -6,7 +6,7 @@ import { CHARACTER_NAMES } from './constants';
 import { supabase } from './supabaseClient';
 
 // --- PASSWORD CONFIGURATION ---
-const SITE_PASSCODE = 'DRACO2025';
+const SITE_PASSCODE = 'karaisqueen';
 // ------------------------------
 
 const App: React.FC = () => {
@@ -282,3 +282,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
