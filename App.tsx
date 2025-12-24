@@ -6,14 +6,14 @@ import { CHARACTER_NAMES } from './constants';
 import { supabase } from './supabaseClient';
 
 // --- PASSWORD CONFIGURATION ---
-const SITE_PASSCODE = 'DRACO2025'; 
+const SITE_PASSCODE = 'DRACO2025';
 // ------------------------------
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
-  
+
   const [submissions, setSubmissions] = useState<AvailabilitySubmission[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,7 +46,7 @@ const App: React.FC = () => {
   const fetchSubmissions = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     else setIsLoading(true);
-    
+
     try {
       const { data, error } = await supabase.from('availability').select('*');
       if (error) throw error;
@@ -88,11 +88,11 @@ const App: React.FC = () => {
     });
 
     // TRY MULTIPLE COLUMN NAMING STRATEGIES
-    const basePayload = { 
-      name: submission.name, 
-      date: submission.date, 
-      timezone: submission.timezone, 
-      comments: submission.comments || '' 
+    const basePayload = {
+      name: submission.name,
+      date: submission.date,
+      timezone: submission.timezone,
+      comments: submission.comments || ''
     };
 
     const strategies = [
@@ -127,17 +127,10 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleShare = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      alert("Chronicles link copied to clipboard! Send it to your party.");
-    });
-  };
-
   const dayStatusMap = useMemo(() => {
     const map: Record<string, DayStatus> = {};
     const groupedByDate: Record<string, AvailabilitySubmission[]> = {};
-    
+
     submissions.forEach(s => {
       if (!groupedByDate[s.date]) groupedByDate[s.date] = [];
       groupedByDate[s.date].push(s);
@@ -146,7 +139,7 @@ const App: React.FC = () => {
     Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
       const distinctNames = new Set(subs.map(s => s.name));
       const count = distinctNames.size;
-      
+
       if (count === CHARACTER_NAMES.length) {
         const allDayCommitment = subs.every(s => s.isAllDay);
         map[dateStr] = allDayCommitment ? DayStatus.GREEN : DayStatus.YELLOW;
@@ -169,14 +162,14 @@ const App: React.FC = () => {
         </div>
         <div className="w-full max-w-md z-10 text-center">
           <div className="mb-12 relative inline-block">
-             <div className="w-24 h-24 mx-auto border-2 border-[#b08d57] rotate-45 flex items-center justify-center animate-gold mb-8">
-                <span className="text-4xl -rotate-45">⚔️</span>
-             </div>
-             <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow mb-2 tracking-widest">DRACOWEST</h1>
-             <p className="text-stone-500 font-medieval uppercase text-[10px] tracking-[0.4em]">Ancient Gateway</p>
+            <div className="w-24 h-24 mx-auto border-2 border-[#b08d57] rotate-45 flex items-center justify-center animate-gold mb-8">
+              <span className="text-4xl -rotate-45">⚔️</span>
+            </div>
+            <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow mb-2 tracking-widest">DRACOWEST</h1>
+            <p className="text-stone-500 font-medieval uppercase text-[10px] tracking-[0.4em]">Ancient Gateway</p>
           </div>
           <form onSubmit={handlePasscodeSubmit} className="space-y-6">
-            <input 
+            <input
               type="password"
               placeholder="Enter Secret Incantation"
               value={passcodeInput}
@@ -205,26 +198,49 @@ const App: React.FC = () => {
           The 2025-2026 Chronicles
           <div className="h-px w-12 bg-stone-800"></div>
         </div>
-        
+
         <div className="flex flex-col items-center gap-6">
           <div className="flex flex-wrap justify-center gap-4">
-            <button onClick={() => fetchSubmissions(true)} className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded font-cinzel" disabled={isRefreshing}>
+            <button
+              onClick={() => fetchSubmissions(true)}
+              className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded font-cinzel"
+              disabled={isRefreshing}
+            >
               {isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}
             </button>
-            <button onClick={handleShare} className="px-10 py-4 bg-stone-900 border border-[#b08d57]/30 text-[#b08d57] hover:bg-stone-800 font-bold rounded font-cinzel transition-all">
-              SHARE LINK
-            </button>
-            <button onClick={() => { localStorage.removeItem('dracowest_auth'); window.location.reload(); }} className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded font-cinzel transition-all">
+
+            {/* SHARE LINK BUTTON REMOVED */}
+
+            <button
+              onClick={() => {
+                localStorage.removeItem('dracowest_auth');
+                window.location.reload();
+              }}
+              className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded font-cinzel transition-all"
+            >
               LOG OUT
             </button>
           </div>
+
           <div className="max-w-md bg-stone-900/50 p-6 rounded-lg border border-stone-800/50 backdrop-blur-sm">
-             <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-2">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">Full Party All Day</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">Full Party Limited</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">Partial Party</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500"></div><span className="text-[10px] font-medieval uppercase text-stone-400">No Signups</span></div>
-             </div>
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">Full Party All Day</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">Full Party Limited</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">Partial Party</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">No Signups</span>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -232,8 +248,8 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-6 space-y-32">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32">
-             <div className="w-16 h-16 border-2 border-[#b08d57] border-t-transparent rounded-full animate-spin mb-6"></div>
-             <p className="font-cinzel text-[#b08d57] animate-pulse uppercase text-sm">Deciphering Ancient Availability...</p>
+            <div className="w-16 h-16 border-2 border-[#b08d57] border-t-transparent rounded-full animate-spin mb-6"></div>
+            <p className="font-cinzel text-[#b08d57] animate-pulse uppercase text-sm">Deciphering Ancient Availability...</p>
           </div>
         ) : (
           <>
@@ -254,7 +270,7 @@ const App: React.FC = () => {
       </main>
 
       {isModalOpen && selectedDate && (
-        <SubmissionModal 
+        <SubmissionModal
           date={selectedDate}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleAddSubmission}
