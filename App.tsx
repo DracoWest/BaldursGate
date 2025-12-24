@@ -6,7 +6,7 @@ import { CHARACTER_NAMES } from './constants';
 import { supabase } from './supabaseClient';
 
 // --- PASSWORD CONFIGURATION ---
-const SITE_PASSCODE = 'karaisqueen'; // Change this to your desired password
+const SITE_PASSCODE = 'DRACO2025'; // Change this to your desired password
 // ------------------------------
 
 const App: React.FC = () => {
@@ -58,11 +58,12 @@ const App: React.FC = () => {
       if (error) {
         console.error('Error fetching availability:', error);
       } else if (data) {
+        // Robust mapping to handle various database column naming conventions
         const mappedData = data.map((item: any) => ({
           ...item,
-          isAllDay: item.isAllDay ?? item.is_all_day ?? item.isallday ?? true,
-          startTime: item.startTime ?? item.start_time ?? item.starttime ?? '00:00',
-          endTime: item.endTime ?? item.end_time ?? item.endtime ?? '23:59'
+          isAllDay: item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
+          startTime: item.start_time ?? item.startTime ?? item.starttime ?? '00:00',
+          endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59'
         }));
         setSubmissions(mappedData as AvailabilitySubmission[]);
       }
@@ -89,21 +90,23 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
+    // We use snake_case for the database columns as it is the Postgres/Supabase standard.
+    // If your table specifically uses camelCase, you would need to change these back.
     const { error } = await supabase
       .from('availability')
       .upsert({
         name: submission.name,
         date: submission.date,
         timezone: submission.timezone,
-        isAllDay: submission.isAllDay,
-        startTime: submission.startTime,
-        endTime: submission.endTime,
+        is_all_day: submission.isAllDay,
+        start_time: submission.startTime,
+        end_time: submission.endTime,
         comments: submission.comments
       }, { onConflict: 'date,name' });
 
     if (error) {
       console.error('Error saving to Supabase:', error);
-      alert('The dice roll failed: ' + error.message);
+      alert('The dice roll failed: ' + error.message + '\n\nPlease check that your Supabase table has columns named: is_all_day, start_time, end_time');
       setSubmissions(prevSubmissions);
     }
 
@@ -150,7 +153,6 @@ const App: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4 relative overflow-hidden">
-        {/* Background Atmosphere */}
         <div className="absolute inset-0 opacity-20 pointer-events-none">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full opacity-50"></div>
