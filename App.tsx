@@ -6,7 +6,7 @@ import { CHARACTER_NAMES } from './constants';
 import { supabase } from './supabaseClient';
 
 // --- PASSWORD CONFIGURATION ---
-const SITE_PASSCODE = 'DRACO2025'; // Change this to your desired password
+const SITE_PASSCODE = 'DRACO2025'; 
 // ------------------------------
 
 const App: React.FC = () => {
@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const now = new Date();
   const currentMonth = now.getMonth();
 
-  // Check for existing session on load
   useEffect(() => {
     const session = localStorage.getItem('dracowest_auth');
     if (session === 'true') {
@@ -40,7 +39,6 @@ const App: React.FC = () => {
     } else {
       setPasscodeError(true);
       setPasscodeInput('');
-      // Shake effect or feedback
       setTimeout(() => setPasscodeError(false), 2000);
     }
   };
@@ -57,12 +55,16 @@ const App: React.FC = () => {
       if (error) {
         console.error('Error fetching availability:', error);
       } else if (data) {
-        // Robust mapping: Prioritize snake_case (start_time) then camelCase (startTime) then lowercase (starttime)
+        // Robust mapping: Prioritize snake_case then fallback to others
         const mappedData = data.map((item: any) => ({
-          ...item,
+          id: item.id || Math.random().toString(36).substr(2, 9),
+          name: item.name,
+          date: item.date,
+          timezone: item.timezone || 'UTC',
           isAllDay: item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
           startTime: item.start_time ?? item.startTime ?? item.starttime ?? '00:00',
-          endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59'
+          endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59',
+          comments: item.comments || ''
         }));
         setSubmissions(mappedData as AvailabilitySubmission[]);
       }
@@ -89,22 +91,24 @@ const App: React.FC = () => {
       return [...filtered, submission];
     });
 
-    // We use snake_case keys here to match standard Supabase column names
+    // Explicitly using snake_case to match PostgREST/Supabase defaults
+    const payload = {
+      name: submission.name,
+      date: submission.date,
+      timezone: submission.timezone,
+      is_all_day: submission.isAllDay,
+      start_time: submission.startTime,
+      end_time: submission.endTime,
+      comments: submission.comments || ''
+    };
+
     const { error } = await supabase
       .from('availability')
-      .upsert({
-        name: submission.name,
-        date: submission.date,
-        timezone: submission.timezone,
-        is_all_day: submission.isAllDay,
-        start_time: submission.startTime,
-        end_time: submission.endTime,
-        comments: submission.comments
-      }, { onConflict: 'date,name' });
+      .upsert(payload, { onConflict: 'date,name' });
 
     if (error) {
-      console.error('Error saving to Supabase:', error);
-      alert('The dice roll failed: ' + error.message);
+      console.error('Database Error:', error);
+      alert(`The Weave is blocked: ${error.message || 'Check column names in Supabase'}`);
       setSubmissions(prevSubmissions);
     }
 
@@ -142,7 +146,6 @@ const App: React.FC = () => {
     return map;
   }, [submissions]);
 
-  // --- GATEKEEPER SCREEN ---
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4 relative overflow-hidden">
@@ -161,57 +164,36 @@ const App: React.FC = () => {
           </div>
 
           <form onSubmit={handlePasscodeSubmit} className="space-y-6">
-            <div className="relative group">
-              <input 
-                type="password"
-                placeholder="Enter Secret Incantation"
-                value={passcodeInput}
-                onChange={(e) => setPasscodeInput(e.target.value)}
-                className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none transition-all duration-500
-                  ${passcodeError ? 'border-rose-500 text-rose-500 animate-shake' : 'border-stone-800 text-[#b08d57] focus:border-[#b08d57] focus:bg-stone-900'}
-                `}
-                autoFocus
-              />
-              <div className="mt-4">
-                 {passcodeError ? (
-                   <p className="text-rose-500 font-medieval text-xs animate-pulse">The Weave rejects your words, Traveler.</p>
-                 ) : (
-                   <p className="text-stone-600 font-medieval text-xs">Speak the secret word to reveal the chronicles.</p>
-                 )}
-              </div>
-            </div>
-
+            <input 
+              type="password"
+              placeholder="Enter Secret Incantation"
+              value={passcodeInput}
+              onChange={(e) => setPasscodeInput(e.target.value)}
+              className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none transition-all duration-500
+                ${passcodeError ? 'border-rose-500 text-rose-500 animate-shake' : 'border-stone-800 text-[#b08d57] focus:border-[#b08d57] focus:bg-stone-900'}
+              `}
+              autoFocus
+            />
             <button 
               type="submit"
-              className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded shadow-[0_0_20px_rgba(176,141,87,0.2)] transition-all hover:shadow-[0_0_30px_rgba(176,141,87,0.4)] active:scale-95"
+              className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded shadow-[0_0_20px_rgba(176,141,87,0.2)]"
             >
               SPEAK INCANTATION
             </button>
           </form>
-
-          <button 
-            onClick={() => alert("The master of the chronicles holds the key.")}
-            className="mt-12 text-stone-700 hover:text-stone-500 font-medieval text-[10px] uppercase tracking-widest transition-colors"
-          >
-            Forgot the word?
-          </button>
         </div>
       </div>
     );
   }
 
-  // --- MAIN APP CONTENT ---
   return (
     <div className="min-h-screen pb-24">
       <header className="pt-16 pb-12 text-center relative px-4 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-[#b08d57]/5 blur-[120px] -z-10 rounded-full"></div>
-        
-        <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow mb-4 tracking-tighter">
-          DRACOWEST
-        </h1>
-        <div className="flex items-center justify-center gap-4 mb-10">
+        <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow mb-4 tracking-tighter">DRACOWEST</h1>
+        <div className="flex items-center justify-center gap-4 mb-10 text-stone-500 font-medieval uppercase tracking-[0.3em] text-xs">
           <div className="h-px w-12 bg-stone-800"></div>
-          <p className="font-medieval text-stone-500 uppercase tracking-[0.3em] text-xs">The 2025-2026 Chronicles</p>
+          The 2025-2026 Chronicles
           <div className="h-px w-12 bg-stone-800"></div>
         </div>
         
@@ -219,25 +201,21 @@ const App: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-4">
             <button 
               onClick={() => fetchSubmissions(true)}
+              className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded font-cinzel transition-all disabled:opacity-50"
               disabled={isRefreshing}
-              className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded shadow-[0_10px_20px_-10px_rgba(176,141,87,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center gap-2 disabled:opacity-50"
             >
-              <span className="font-cinzel">{isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}</span>
+              {isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}
             </button>
             <button 
-              onClick={() => {
-                localStorage.removeItem('dracowest_auth');
-                window.location.reload();
-              }}
-              className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded transition-all flex items-center gap-2"
+              onClick={() => { localStorage.removeItem('dracowest_auth'); window.location.reload(); }}
+              className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded font-cinzel transition-all"
             >
-              <span className="font-cinzel">LOG OUT</span>
+              LOG OUT
             </button>
           </div>
-          
           <div className="max-w-md bg-stone-900/50 p-6 rounded-lg border border-stone-800/50 backdrop-blur-sm">
              <p className="text-stone-400 text-sm font-medieval leading-relaxed">
-                The Weave is active. Red is deserted. Orange means some members are ready. Yellow is a full party with limited hours. Gold/Green is full party all day. Click any day to update your availability.
+                <span className="text-rose-500">Red</span> is empty. <span className="text-orange-500">Orange</span> is partial party. <span className="text-amber-500">Yellow</span> is full party (limited). <span className="text-emerald-500">Green</span> is full party all day.
              </p>
           </div>
         </div>
@@ -247,7 +225,7 @@ const App: React.FC = () => {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32">
              <div className="w-16 h-16 border-2 border-[#b08d57] border-t-transparent rounded-full animate-spin mb-6"></div>
-             <p className="font-cinzel text-[#b08d57] animate-pulse tracking-widest uppercase text-sm">Deciphering Ancient Availability...</p>
+             <p className="font-cinzel text-[#b08d57] animate-pulse uppercase text-sm">Deciphering Ancient Availability...</p>
           </div>
         ) : (
           <>
