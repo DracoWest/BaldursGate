@@ -17,7 +17,6 @@ const App: React.FC = () => {
   const [submissions, setSubmissions] = useState<AvailabilitySubmission[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showCopyFeedback, setShowCopyFeedback] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -116,14 +115,6 @@ const App: React.FC = () => {
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
     setIsModalOpen(true);
-  };
-
-  const generateShareLink = () => {
-    const shareUrl = window.location.href;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setShowCopyFeedback(true);
-      setTimeout(() => setShowCopyFeedback(false), 4000);
-    });
   };
 
   const dayStatusMap = useMemo(() => {
@@ -225,17 +216,9 @@ const App: React.FC = () => {
         <div className="flex flex-col items-center gap-6">
           <div className="flex flex-wrap justify-center gap-4">
             <button 
-              onClick={generateShareLink}
-              className="group relative px-8 py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold rounded shadow-[0_10px_20px_-10px_rgba(176,141,87,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0"
-            >
-              <span className="font-cinzel flex items-center gap-2">
-                {showCopyFeedback ? '✨ LINK SEALED ✨' : '🔗 SHARE THIS QUEST'}
-              </span>
-            </button>
-            <button 
               onClick={() => fetchSubmissions(true)}
               disabled={isRefreshing}
-              className="px-8 py-4 bg-stone-900 border border-stone-700 text-stone-300 hover:text-white hover:border-stone-500 font-bold rounded transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded shadow-[0_10px_20px_-10px_rgba(176,141,87,0.5)] transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center gap-2 disabled:opacity-50"
             >
               <span className="font-cinzel">{isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}</span>
             </button>
@@ -244,17 +227,15 @@ const App: React.FC = () => {
                 localStorage.removeItem('dracowest_auth');
                 window.location.reload();
               }}
-              className="px-4 py-4 bg-stone-950 border border-stone-900 text-stone-700 hover:text-stone-500 text-[10px] font-medieval rounded transition-all uppercase tracking-widest"
+              className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded transition-all flex items-center gap-2"
             >
-              Log Out
+              <span className="font-cinzel">LOG OUT</span>
             </button>
           </div>
           
-          <div className="max-w-md bg-stone-900/50 p-4 rounded-lg border border-stone-800/50 backdrop-blur-sm">
-             <p className="text-stone-400 text-sm font-medieval">
-                {showCopyFeedback 
-                  ? "The party link is in your inventory! Send the URL in your browser address bar to your companions."
-                  : "The Weave is active. Red indicates missing companions (0-5). Yellow means all 6 are here but some have limited hours. Gold is full 6-person full-day harmony."}
+          <div className="max-w-md bg-stone-900/50 p-6 rounded-lg border border-stone-800/50 backdrop-blur-sm">
+             <p className="text-stone-400 text-sm font-medieval leading-relaxed">
+                The Weave is active. Red indicates missing companions (0-5). Yellow means all 6 are here but some have limited hours. Gold is full 6-person full-day harmony. Click any day to update your availability.
              </p>
           </div>
         </div>
