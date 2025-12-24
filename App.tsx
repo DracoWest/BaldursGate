@@ -160,14 +160,34 @@ const App: React.FC = () => {
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full opacity-50"></div>
         </div>
+
         <div className="w-full max-w-md z-10 text-center">
-          <div className="mb-12 relative inline-block">
+          <div className="mb-10 relative inline-block">
             <div className="w-24 h-24 mx-auto border-2 border-[#b08d57] rotate-45 flex items-center justify-center animate-gold mb-8">
               <span className="text-4xl -rotate-45">⚔️</span>
             </div>
-            <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow mb-2 tracking-widest">DRACOWEST</h1>
-            <p className="text-stone-500 font-medieval uppercase text-[10px] tracking-[0.4em]">Ancient Gateway</p>
+
+            <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow mb-2 tracking-widest">
+              DRACOWEST
+            </h1>
+
+            <p className="text-stone-500 font-medieval uppercase text-[10px] tracking-[0.4em]">
+              Ancient Gateway
+            </p>
+
+            {/* NEW WITTY BG-STYLE MESSAGE */}
+            <div className="mt-6 max-w-sm mx-auto">
+              <p className="text-stone-400 font-medieval text-sm leading-relaxed">
+                No passcode? Then linger at the threshold.
+                <span className="block mt-2 text-[#b08d57] font-cinzel tracking-wide">
+                  Great things will be revealed when the party is ready.
+                </span>
+              </p>
+              <div className="mt-5 h-px w-40 mx-auto bg-stone-800/80" />
+            </div>
+            {/* END NEW MESSAGE */}
           </div>
+
           <form onSubmit={handlePasscodeSubmit} className="space-y-6">
             <input
               type="password"
@@ -179,7 +199,10 @@ const App: React.FC = () => {
               `}
               autoFocus
             />
-            <button type="submit" className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded">
+            <button
+              type="submit"
+              className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded"
+            >
               SPEAK INCANTATION
             </button>
           </form>
@@ -257,13 +280,26 @@ const App: React.FC = () => {
               <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
                 <h2 className="text-4xl font-cinzel text-[#b08d57]">2025</h2>
               </div>
-              <CalendarGrid startMonth={currentMonth} startYear={2025} numMonths={12 - currentMonth} dayStatusMap={dayStatusMap} onDayClick={handleDayClick} />
+              <CalendarGrid
+                startMonth={currentMonth}
+                startYear={2025}
+                numMonths={12 - currentMonth}
+                dayStatusMap={dayStatusMap}
+                onDayClick={handleDayClick}
+              />
             </section>
+
             <section className="relative pb-24">
               <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
                 <h2 className="text-4xl font-cinzel text-[#b08d57]">2026</h2>
               </div>
-              <CalendarGrid startMonth={0} startYear={2026} numMonths={12} dayStatusMap={dayStatusMap} onDayClick={handleDayClick} />
+              <CalendarGrid
+                startMonth={0}
+                startYear={2026}
+                numMonths={12}
+                dayStatusMap={dayStatusMap}
+                onDayClick={handleDayClick}
+              />
             </section>
           </>
         )}
@@ -282,4 +318,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
