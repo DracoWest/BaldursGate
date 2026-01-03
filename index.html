@@ -14,6 +14,9 @@
             --accent-gold: #b08d57;
             --accent-gold-bright: #e2c08d;
             --stone-800: #292524;
+
+            --good-glow: rgba(176,141,87,0.55);
+            --bad-glow: rgba(220,38,38,0.55);
         }
 
         body {
@@ -47,9 +50,86 @@
             0%, 100% { opacity: 0.6; }
             50% { opacity: 1; text-shadow: 0 0 18px #b08d57; }
         }
+        .animate-gold { animation: pulse-gold 3s infinite; }
 
-        .animate-gold {
-            animation: pulse-gold 3s infinite;
+        /* ---------------------------
+           Gatekeeper animations
+        ---------------------------- */
+        .gateWrap{
+            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(180deg, rgba(15,23,38,0.55), rgba(10,10,12,0.55));
+            box-shadow: 0 18px 60px rgba(0,0,0,0.5);
+            border-radius: 18px;
+            padding: 22px 18px;
+        }
+        .gateFrame{
+            width: 110px;
+            height: 110px;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(0,0,0,0.25);
+            box-shadow: 0 0 0 1px rgba(176,141,87,0.12) inset;
+            position: relative;
+        }
+        .gateImg{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transform-origin: 50% 60%;
+        }
+
+        /* Idle blink: quick dim + micro-squash */
+        @keyframes idleBlink {
+            0%, 90%, 100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+            92% { transform: scaleY(0.975) scaleX(1.01); filter: brightness(0.88); }
+            94% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
+        }
+        .is-idle .gateImg { animation: idleBlink 4.8s infinite; }
+
+        /* Success: subtle gold glow pulse + micro bounce */
+        @keyframes goodGlow {
+            0% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+            35% { box-shadow: 0 0 26px var(--good-glow); }
+            100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+        }
+        @keyframes goodBounce {
+            0% { transform: translateY(0); }
+            40% { transform: translateY(-2px); }
+            100% { transform: translateY(0); }
+        }
+        .is-success .gateFrame { animation: goodGlow 800ms ease-out 1; }
+        .is-success .gateImg { animation: goodBounce 450ms ease-out 1; }
+
+        /* Fail: red glow + shake */
+        @keyframes badGlow {
+            0% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+            40% { box-shadow: 0 0 28px var(--bad-glow); }
+            100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            15% { transform: translateX(-3px); }
+            30% { transform: translateX(3px); }
+            45% { transform: translateX(-2px); }
+            60% { transform: translateX(2px); }
+            100% { transform: translateX(0); }
+        }
+        .is-fail .gateFrame { animation: badGlow 700ms ease-out 1, shake 420ms ease-out 1; }
+
+        /* Tiny helper for status text */
+        .gateStatus{
+            font-family: 'MedievalSharp', cursive;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-size: 10px;
+            color: rgba(155,155,155,0.85);
+        }
+        .gateStatus strong{
+            color: var(--accent-gold);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 0.12em;
         }
     </style>
 
@@ -71,6 +151,34 @@
 
     <!-- React App -->
     <div id="root"></div>
+
+    <!-- Gatekeeper (between BG calendar and Arena) -->
+    <div class="max-w-xl mx-auto mt-16 px-6 text-center">
+        <div class="gateWrap">
+            <div class="flex flex-col items-center gap-4">
+                <div id="gatekeeper" class="is-idle">
+                    <div class="gateFrame mx-auto">
+                        <!-- Put your 3 images in /public/gate/ (or equivalent static folder) -->
+                        <img
+                          id="gateImg"
+                          class="gateImg"
+                          src="/gate/idle.png"
+                          alt="Gatekeeper"
+                        />
+                    </div>
+                </div>
+
+                <div class="gateStatus">
+                    <div><strong>Gatekeeper</strong></div>
+                    <div id="gateText">Awaiting an incantation…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional sound cues (only work if you add these files) -->
+    <audio id="sndGood" src="/gate/grant.mp3" preload="auto"></audio>
+    <audio id="sndBad" src="/gate/deny.mp3" preload="auto"></audio>
 
     <!-- Private Entrance (Owner Only) -->
     <div class="max-w-xl mx-auto mt-20 px-6 text-center">
@@ -97,6 +205,78 @@
             </a>
         </div>
     </div>
+
+    <!-- Gatekeeper controller -->
+    <script>
+      (function(){
+        const gate = document.getElementById('gatekeeper');
+        const img = document.getElementById('gateImg');
+        const txt = document.getElementById('gateText');
+
+        const sndGood = document.getElementById('sndGood');
+        const sndBad = document.getElementById('sndBad');
+
+        const SRC = {
+          idle: "/gate/idle.png",
+          success: "/gate/granted.png",
+          fail: "/gate/denied.png"
+        };
+
+        let resetTimer = null;
+
+        function clearStates(){
+          gate.classList.remove("is-idle","is-success","is-fail");
+        }
+
+        function setState(state){
+          clearTimeout(resetTimer);
+          clearStates();
+
+          if (state === "idle") {
+            gate.classList.add("is-idle");
+            img.src = SRC.idle;
+            txt.textContent = "Awaiting an incantation…";
+            return;
+          }
+
+          if (state === "typing") {
+            // keep idle cat, but change text
+            gate.classList.add("is-idle");
+            img.src = SRC.idle;
+            txt.textContent = "The gatekeeper watches…";
+            return;
+          }
+
+          if (state === "success") {
+            gate.classList.add("is-success");
+            img.src = SRC.success;
+            txt.textContent = "Access granted.";
+            try { sndGood && sndGood.play && sndGood.play(); } catch(e){}
+            resetTimer = setTimeout(() => setState("idle"), 1200);
+            return;
+          }
+
+          if (state === "fail") {
+            gate.classList.add("is-fail");
+            img.src = SRC.fail;
+            txt.textContent = "Access denied.";
+            try { sndBad && sndBad.play && sndBad.play(); } catch(e){}
+            resetTimer = setTimeout(() => setState("idle"), 1200);
+            return;
+          }
+        }
+
+        // Listen for events from your React passcode form
+        window.addEventListener("dracowest:gatekeeper", (ev) => {
+          const state = ev && ev.detail && ev.detail.state;
+          if (!state) return;
+          setState(state);
+        });
+
+        // default
+        setState("idle");
+      })();
+    </script>
 
     <!-- React Entry -->
     <script type="module" src="./index.tsx"></script>
