@@ -262,14 +262,17 @@ const App: React.FC = () => {
 
             <button className="w-full py-4 bg-[#b08d57] text-black font-bold font-cinzel rounded">
               SPEAK INCANTATION
-            </button>
+           </button>
 
-            <GatekeeperCat
-              idleSrc="/gate/idle.png"
-              successSrc="/gate/granted.png"
-              failSrc="/gate/denied.png"
-            />
-          </form>
+  {/* Gatekeeper sits DIRECTLY under the button */}
+  <div className="mt-4 flex justify-center">
+    <GatekeeperCat
+      idleSrc="/gate/idle.png"
+      successSrc="/gate/granted.png"
+      failSrc="/gate/denied.png"
+    />
+  </div>
+</form>
         </div>
       </div>
     );
@@ -337,3 +340,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
