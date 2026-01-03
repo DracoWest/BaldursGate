@@ -1,352 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DracoWest | Baldur's Gate Tracker</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=MedievalSharp&family=Quattrocento:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DracoWest | Baldur's Gate Tracker</title>
 
-    <style>
-        :root {
-            --bg-dark: #0a0a0c;
-            --accent-gold: #b08d57;
-            --accent-gold-bright: #e2c08d;
-            --stone-800: #292524;
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
 
-            --good-glow: rgba(176,141,87,0.55);
-            --bad-glow: rgba(220,38,38,0.55);
-        }
+  <script src="https://cdn.tailwindcss.com"></script>
 
-        body {
-            background-color: var(--bg-dark);
-            color: #d1d1d1;
-            font-family: 'Quattrocento', serif;
-            margin: 0;
-            background-image:
-                radial-gradient(circle at 50% 0%, #1e1b18 0%, transparent 75%),
-                linear-gradient(to bottom, #0a0a0c, #141416);
-            background-attachment: fixed;
-        }
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=MedievalSharp&family=Quattrocento:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
 
-        .font-cinzel { font-family: 'Cinzel', serif; }
-        .font-medieval { font-family: 'MedievalSharp', cursive; }
+  <style>
+    :root {
+      --bg-dark: #0a0a0c;
+      --accent-gold: #b08d57;
+      --accent-gold-bright: #e2c08d;
+      --stone-800: #292524;
 
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb {
-            background: #332b24;
-            border-radius: 4px;
-            border: 1px solid #443b34;
-        }
-        ::-webkit-scrollbar-thumb:hover { background: #443b34; }
-
-        .parchment-glow {
-            text-shadow: 0 0 15px rgba(176, 141, 87, 0.4);
-        }
-
-        @keyframes pulse-gold {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; text-shadow: 0 0 18px #b08d57; }
-        }
-        .animate-gold { animation: pulse-gold 3s infinite; }
-
-        /* ---------------------------
-           Gatekeeper animations
-        ---------------------------- */
-        .gateWrap{
-            border: 1px solid rgba(255,255,255,0.08);
-            background: linear-gradient(180deg, rgba(15,23,38,0.55), rgba(10,10,12,0.55));
-            box-shadow: 0 18px 60px rgba(0,0,0,0.5);
-            border-radius: 18px;
-            padding: 22px 18px;
-        }
-        .gateFrame{
-            width: 110px;
-            height: 110px;
-            border-radius: 999px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.10);
-            background: rgba(0,0,0,0.25);
-            box-shadow: 0 0 0 1px rgba(176,141,87,0.12) inset;
-            position: relative;
-        }
-        .gateImg{
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            transform-origin: 50% 60%;
-        }
-
-        /* Idle blink: quick dim + micro-squash */
-        @keyframes idleBlink {
-            0%, 90%, 100% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
-            92% { transform: scaleY(0.975) scaleX(1.01); filter: brightness(0.88); }
-            94% { transform: scaleY(1) scaleX(1); filter: brightness(1); }
-        }
-        .is-idle .gateImg { animation: idleBlink 4.8s infinite; }
-
-        /* Success: subtle gold glow pulse + micro bounce */
-        @keyframes goodGlow {
-            0% { box-shadow: 0 0 0 rgba(0,0,0,0); }
-            35% { box-shadow: 0 0 26px var(--good-glow); }
-            100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
-        }
-        @keyframes goodBounce {
-            0% { transform: translateY(0); }
-            40% { transform: translateY(-2px); }
-            100% { transform: translateY(0); }
-        }
-        .is-success .gateFrame { animation: goodGlow 800ms ease-out 1; }
-        .is-success .gateImg { animation: goodBounce 450ms ease-out 1; }
-
-        /* Fail: red glow + shake */
-        @keyframes badGlow {
-            0% { box-shadow: 0 0 0 rgba(0,0,0,0); }
-            40% { box-shadow: 0 0 28px var(--bad-glow); }
-            100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
-        }
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            15% { transform: translateX(-3px); }
-            30% { transform: translateX(3px); }
-            45% { transform: translateX(-2px); }
-            60% { transform: translateX(2px); }
-            100% { transform: translateX(0); }
-        }
-        .is-fail .gateFrame { animation: badGlow 700ms ease-out 1, shake 420ms ease-out 1; }
-
-        /* Tiny helper for status text */
-        .gateStatus{
-            font-family: 'MedievalSharp', cursive;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            font-size: 10px;
-            color: rgba(155,155,155,0.85);
-        }
-        .gateStatus strong{
-            color: var(--accent-gold);
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.12em;
-        }
-   /* --- Gatekeeper Cat --- */
-.gateWrap{
-  display:flex;
-  justify-content:center;
-  margin: 22px auto 14px;
-}
-
-.gateCat{
-  width: 170px;
-  height: 170px;
-  border-radius: 999px;
-  overflow:hidden;
-  border:1px solid rgba(176,141,87,0.35);
-  box-shadow: 0 18px 60px rgba(0,0,0,0.55);
-  background: rgba(0,0,0,0.25);
-  position:relative;
-}
-
-.gateCat img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block;
-}
-
-/* idle blink */
-@keyframes gateBlink {
-  0%, 92%, 100% { transform: scaleY(1); }
-  94%, 96% { transform: scaleY(0.08); }
-}
-.gateCat.is-idle img{
-  transform-origin: 50% 60%;
-  animation: gateBlink 5.5s infinite;
-}
-
-/* success glow */
-@keyframes gateSuccessGlow {
-  0% { box-shadow: 0 18px 60px rgba(0,0,0,0.55); }
-  50% { box-shadow: 0 0 0 6px rgba(176,141,87,0.22), 0 0 26px rgba(176,141,87,0.35), 0 18px 60px rgba(0,0,0,0.55); }
-  100% { box-shadow: 0 18px 60px rgba(0,0,0,0.55); }
-}
-.gateCat.is-success{
-  border-color: rgba(226,192,141,0.65);
-  animation: gateSuccessGlow 0.9s ease-out 1;
-}
-
-/* error glow + shake */
-@keyframes gateShake {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(-6px); }
-  40% { transform: translateX(6px); }
-  60% { transform: translateX(-5px); }
-  80% { transform: translateX(5px); }
-  100% { transform: translateX(0); }
-}
-.gateCat.is-error{
-  border-color: rgba(255, 107, 107, 0.8);
-  box-shadow: 0 0 0 6px rgba(255, 107, 107, 0.14), 0 0 26px rgba(255, 107, 107, 0.22), 0 18px 60px rgba(0,0,0,0.55);
-  animation: gateShake 0.45s ease-in-out 1;
-}
-
-/* mobile sizing */
-@media (max-width: 480px){
-  .gateCat{ width: 140px; height: 140px; }
-}
-
-    </style>
-
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@^19.2.3",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "react/": "https://esm.sh/react@^19.2.3/",
-        "vite": "https://esm.sh/vite@^7.3.0",
-        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
-      }
+      --good-glow: rgba(176,141,87,0.55);
+      --bad-glow: rgba(220,38,38,0.55);
     }
-    </script>
+
+    body {
+      background-color: var(--bg-dark);
+      color: #d1d1d1;
+      font-family: 'Quattrocento', serif;
+      margin: 0;
+      background-image:
+        radial-gradient(circle at 50% 0%, #1e1b18 0%, transparent 75%),
+        linear-gradient(to bottom, #0a0a0c, #141416);
+      background-attachment: fixed;
+    }
+
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .font-medieval { font-family: 'MedievalSharp', cursive; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb {
+      background: #332b24;
+      border-radius: 4px;
+      border: 1px solid #443b34;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: #443b34; }
+
+    .parchment-glow {
+      text-shadow: 0 0 15px rgba(176, 141, 87, 0.4);
+    }
+
+    @keyframes pulse-gold {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; text-shadow: 0 0 18px #b08d57; }
+    }
+    .animate-gold { animation: pulse-gold 3s infinite; }
+
+    /* Gatekeeper styles kept for React version */
+    .gateWrap{
+      display:flex;
+      justify-content:center;
+      margin: 22px auto 14px;
+    }
+
+    .gateCat{
+      width: 170px;
+      height: 170px;
+      border-radius: 999px;
+      overflow:hidden;
+      border:1px solid rgba(176,141,87,0.35);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.25);
+      position:relative;
+    }
+
+    .gateCat img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    @keyframes gateBlink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      94%, 96% { transform: scaleY(0.08); }
+    }
+    .gateCat.is-idle img{
+      transform-origin: 50% 60%;
+      animation: gateBlink 5.5s infinite;
+    }
+
+    @keyframes gateSuccessGlow {
+      0% { box-shadow: 0 18px 60px rgba(0,0,0,0.55); }
+      50% {
+        box-shadow:
+          0 0 0 6px rgba(176,141,87,0.22),
+          0 0 26px rgba(176,141,87,0.35),
+          0 18px 60px rgba(0,0,0,0.55);
+      }
+      100% { box-shadow: 0 18px 60px rgba(0,0,0,0.55); }
+    }
+    .gateCat.is-success{
+      border-color: rgba(226,192,141,0.65);
+      animation: gateSuccessGlow 0.9s ease-out 1;
+    }
+
+    @keyframes gateShake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+    .gateCat.is-error{
+      border-color: rgba(255, 107, 107, 0.8);
+      box-shadow:
+        0 0 0 6px rgba(255, 107, 107, 0.14),
+        0 0 26px rgba(255, 107, 107, 0.22),
+        0 18px 60px rgba(0,0,0,0.55);
+      animation: gateShake 0.45s ease-in-out 1;
+    }
+
+    @media (max-width: 480px){
+      .gateCat{ width: 140px; height: 140px; }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@^19.2.3",
+      "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+      "react/": "https://esm.sh/react@^19.2.3/",
+      "vite": "https://esm.sh/vite@^7.3.0",
+      "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+      "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
+    }
+  }
+  </script>
 </head>
 
 <body>
 
-    <!-- React App -->
-    <div id="root"></div>
+  <!-- React App -->
+  <div id="root"></div>
 
-    <!-- Gatekeeper (between BG calendar and Arena) -->
-    <div class="max-w-xl mx-auto mt-16 px-6 text-center">
-        <div class="gateWrap">
-            <div class="flex flex-col items-center gap-4">
-                <div id="gatekeeper" class="is-idle">
-                    <div class="gateFrame mx-auto">
-                        <!-- Put your 3 images in /public/gate/ (or equivalent static folder) -->
-                        <img
-                          id="gateImg"
-                          class="gateImg"
-                          src="/gate/idle.png"
-                          alt="Gatekeeper"
-                        />
-                    </div>
-                </div>
+  <!-- Private Entrance (Owner Only) -->
+  <div class="max-w-xl mx-auto mt-20 px-6 text-center">
+    <div class="border-t border-stone-700/50 pt-10">
+      <h2 class="font-cinzel text-xl tracking-widest text-[var(--accent-gold)] parchment-glow mb-2">
+        Private Entrance
+      </h2>
 
-                <div class="gateStatus">
-                    <div><strong>Gatekeeper</strong></div>
-                    <div id="gateText">Awaiting an incantation…</div>
-                </div>
-            </div>
-        </div>
+      <p class="text-sm text-stone-400 mb-6">
+        Owner access only.
+      </p>
+
+      <a
+        href="https://arena.dracowest.ca/arena/login"
+        class="inline-block px-10 py-3 font-cinzel tracking-wider
+               border border-[var(--accent-gold)]
+               text-[var(--accent-gold)]
+               rounded-md
+               hover:bg-[var(--accent-gold)]
+               hover:text-black
+               transition-all duration-200 animate-gold"
+      >
+        Enter Monster Arena
+      </a>
     </div>
+  </div>
 
-    <!-- Optional sound cues (only work if you add these files) -->
-    <audio id="sndGood" src="/gate/grant.mp3" preload="auto"></audio>
-    <audio id="sndBad" src="/gate/deny.mp3" preload="auto"></audio>
-
-    <!-- Private Entrance (Owner Only) -->
-    <div class="max-w-xl mx-auto mt-20 px-6 text-center">
-        <div class="border-t border-stone-700/50 pt-10">
-            <h2 class="font-cinzel text-xl tracking-widest text-[var(--accent-gold)] parchment-glow mb-2">
-                Private Entrance
-            </h2>
-
-            <p class="text-sm text-stone-400 mb-6">
-                Owner access only.
-            </p>
-
-            <a
-                href="https://arena.dracowest.ca/arena/login"
-                class="inline-block px-10 py-3 font-cinzel tracking-wider
-                       border border-[var(--accent-gold)]
-                       text-[var(--accent-gold)]
-                       rounded-md
-                       hover:bg-[var(--accent-gold)]
-                       hover:text-black
-                       transition-all duration-200 animate-gold"
-            >
-                Enter Monster Arena
-            </a>
-        </div>
-    </div>
-
-    <!-- Gatekeeper controller -->
-    <script>
-      (function(){
-        const gate = document.getElementById('gatekeeper');
-        const img = document.getElementById('gateImg');
-        const txt = document.getElementById('gateText');
-
-        const sndGood = document.getElementById('sndGood');
-        const sndBad = document.getElementById('sndBad');
-
-        const SRC = {
-          idle: "/gate/idle.png",
-          success: "/gate/granted.png",
-          fail: "/gate/denied.png"
-        };
-
-        let resetTimer = null;
-
-        function clearStates(){
-          gate.classList.remove("is-idle","is-success","is-fail");
-        }
-
-        function setState(state){
-          clearTimeout(resetTimer);
-          clearStates();
-
-          if (state === "idle") {
-            gate.classList.add("is-idle");
-            img.src = SRC.idle;
-            txt.textContent = "Awaiting an incantation…";
-            return;
-          }
-
-          if (state === "typing") {
-            // keep idle cat, but change text
-            gate.classList.add("is-idle");
-            img.src = SRC.idle;
-            txt.textContent = "The gatekeeper watches…";
-            return;
-          }
-
-          if (state === "success") {
-            gate.classList.add("is-success");
-            img.src = SRC.success;
-            txt.textContent = "Access granted.";
-            try { sndGood && sndGood.play && sndGood.play(); } catch(e){}
-            resetTimer = setTimeout(() => setState("idle"), 1200);
-            return;
-          }
-
-          if (state === "fail") {
-            gate.classList.add("is-fail");
-            img.src = SRC.fail;
-            txt.textContent = "Access denied.";
-            try { sndBad && sndBad.play && sndBad.play(); } catch(e){}
-            resetTimer = setTimeout(() => setState("idle"), 1200);
-            return;
-          }
-        }
-
-        // Listen for events from your React passcode form
-        window.addEventListener("dracowest:gatekeeper", (ev) => {
-          const state = ev && ev.detail && ev.detail.state;
-          if (!state) return;
-          setState(state);
-        });
-
-        // default
-        setState("idle");
-      })();
-    </script>
-
-    <!-- React Entry -->
-    <script type="module" src="./index.tsx"></script>
+  <!-- React Entry -->
+  <script type="module" src="./index.tsx"></script>
 
 </body>
 </html>
-
