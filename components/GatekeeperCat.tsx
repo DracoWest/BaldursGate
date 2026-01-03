@@ -24,7 +24,6 @@ const GatekeeperCat: React.FC<GatekeeperCatProps> = ({
       ? failSrc
       : idleSrc;
 
-  // Listen for events from App.tsx
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -55,10 +54,12 @@ const GatekeeperCat: React.FC<GatekeeperCatProps> = ({
           }
         `}
       >
+        {/* KEY IS THE FIX */}
         <img
+          key={state} 
           src={src}
           alt="Gatekeeper"
-          className={`w-full h-full object-cover transition-all duration-300
+          className={`w-full h-full object-cover
             ${state === "fail" ? "animate-shake" : ""}
           `}
           draggable={false}
