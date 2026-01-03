@@ -7,6 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚔️</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=MedievalSharp&family=Quattrocento:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --bg-dark: #0a0a0c;
@@ -14,60 +15,91 @@
             --accent-gold-bright: #e2c08d;
             --stone-800: #292524;
         }
+
         body {
             background-color: var(--bg-dark);
             color: #d1d1d1;
             font-family: 'Quattrocento', serif;
             margin: 0;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 50% 0%, #1e1b18 0%, transparent 75%),
                 linear-gradient(to bottom, #0a0a0c, #141416);
             background-attachment: fixed;
         }
+
         .font-cinzel { font-family: 'Cinzel', serif; }
         .font-medieval { font-family: 'MedievalSharp', cursive; }
-        
+
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #332b24; border-radius: 4px; border: 1px solid #443b34; }
+        ::-webkit-scrollbar-thumb {
+            background: #332b24;
+            border-radius: 4px;
+            border: 1px solid #443b34;
+        }
         ::-webkit-scrollbar-thumb:hover { background: #443b34; }
 
         .parchment-glow {
             text-shadow: 0 0 15px rgba(176, 141, 87, 0.4);
         }
 
-        .gold-border {
-            border-image: linear-gradient(to bottom, #b08d57, #5c4a2e) 1;
-        }
-
         @keyframes pulse-gold {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; text-shadow: 0 0 20px #b08d57; }
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; text-shadow: 0 0 18px #b08d57; }
         }
-        .animate-gold { animation: pulse-gold 3s infinite; }
 
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-10px); }
-          75% { transform: translateX(10px); }
+        .animate-gold {
+            animation: pulse-gold 3s infinite;
         }
-        .animate-shake { animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both; }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
-  }
-}
-</script>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.2.3",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "vite": "https://esm.sh/vite@^7.3.0",
+        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+        "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.89.0"
+      }
+    }
+    </script>
 </head>
+
 <body>
+
+    <!-- React App -->
     <div id="root"></div>
+
+    <!-- Private Entrance (Owner Only) -->
+    <div class="max-w-xl mx-auto mt-20 px-6 text-center">
+        <div class="border-t border-stone-700/50 pt-10">
+            <h2 class="font-cinzel text-xl tracking-widest text-[var(--accent-gold)] parchment-glow mb-2">
+                Private Entrance
+            </h2>
+
+            <p class="text-sm text-stone-400 mb-6">
+                Owner access only.
+            </p>
+
+            <a
+                href="https://arena.dracowest.ca/arena/login"
+                class="inline-block px-10 py-3 font-cinzel tracking-wider
+                       border border-[var(--accent-gold)]
+                       text-[var(--accent-gold)]
+                       rounded-md
+                       hover:bg-[var(--accent-gold)]
+                       hover:text-black
+                       transition-all duration-200 animate-gold"
+            >
+                Enter Monster Arena
+            </a>
+        </div>
+    </div>
+
+    <!-- React Entry -->
     <script type="module" src="./index.tsx"></script>
+
 </body>
 </html>
