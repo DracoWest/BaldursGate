@@ -1,70 +1,45 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import GatekeeperCat from "./components/GatekeeperCat";
-import CalendarGrid from "./components/CalendarGrid";
-import SubmissionModal from "./components/SubmissionModal";
-import { AvailabilitySubmission, DayStatus } from "./types";
-import { CHARACTER_NAMES } from "./constants";
-import { supabase } from "./supabaseClient";
-
-/* ---------------- CONFIG ---------------- */
-
-const SITE_PASSCODE = "karaisqueen";
-const TARGET_YEAR = 2026;
-
-/* ---------------- APP ---------------- */
-
-const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passcodeInput, setPasscodeInput] = useState("");
-  const [passcodeError, setPasscodeError] = useState(false);
-
-  const [submissions, setSubmissions] = useState<AvailabilitySubmission[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+import { AvailabilitySubmission, DayStatus } from './types';
+import CalendarGrid from './components/CalendarGrid';
+import SubmissionModal from './components/SubmissionModal';
+@@ -24,21 +25,41 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  /* -------- Gatekeeper bridge -------- */
-
-  const gate = (state: "idle" | "success" | "fail") => {
+  // Gatekeeper event helper (talks to the GatekeeperCat component)
+  const gate = (state: "idle" | "typing" | "success" | "fail") => {
     window.dispatchEvent(
       new CustomEvent("dracowest:gatekeeper", { detail: { state } })
     );
   };
 
-  /* -------- Restore auth -------- */
-
   useEffect(() => {
-    if (localStorage.getItem("dracowest_auth") === "true") {
-      setIsAuthenticated(true);
-    }
+    const session = localStorage.getItem('dracowest_auth');
+    if (session === 'true') setIsAuthenticated(true);
   }, []);
-
-  /* -------- Ensure idle gate ONCE -------- */
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      gate("idle");
-    }
-  }, [isAuthenticated]);
-
-  /* -------- Passcode submit -------- */
 
   const handlePasscodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (passcodeInput === SITE_PASSCODE) {
+      setIsAuthenticated(true);
+      localStorage.setItem('dracowest_auth', 'true');
       gate("success");
       setPasscodeError(false);
 
+      // Let the success animation play before switching screens
       setTimeout(() => {
-        localStorage.setItem("dracowest_auth", "true");
         setIsAuthenticated(true);
+        localStorage.setItem('dracowest_auth', 'true');
       }, 650);
+
     } else {
       gate("fail");
+
       setPasscodeError(true);
-      setPasscodeInput("");
+      setPasscodeInput('');
+      setTimeout(() => setPasscodeError(false), 2000);
 
       setTimeout(() => {
         setPasscodeError(false);
@@ -73,149 +48,51 @@ const App: React.FC = () => {
     }
   };
 
-  /* -------- Date guards -------- */
-
-  const is2026DateString = (d: string) =>
-    typeof d === "string" && d.startsWith(`${TARGET_YEAR}-`);
-
-  const is2026Date = (d: Date) => d.getFullYear() === TARGET_YEAR;
-
-  /* -------- Fetch submissions -------- */
-
-  const fetchSubmissions = async () => {
-    setIsLoading(true);
-
-    try {
-      const { data } = await supabase.from("availability").select("*");
-
-      const mapped: AvailabilitySubmission[] = (data || [])
-        .map((item: any) => ({
-          id: item.id ?? crypto.randomUUID(),
-          name: item.name,
-          date: item.date,
-          timezone: item.timezone ?? "UTC",
-          isAllDay:
-            item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
-          startTime:
-            item.start_time ?? item.startTime ?? item.starttime ?? "00:00",
-          endTime:
-            item.end_time ?? item.endTime ?? item.endtime ?? "23:59",
-          comments: item.comments ?? "",
-        }))
-        .filter((s) => is2026DateString(s.date));
-
-      setSubmissions(mapped);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) fetchSubmissions();
-  }, [isAuthenticated]);
-
-  /* -------- Calendar click -------- */
-
-  const handleDayClick = (date: Date) => {
-    if (!is2026Date(date)) return;
-    setSelectedDate(date);
-    setIsModalOpen(true);
-  };
-
-  /* -------- Status map -------- */
-
-  const dayStatusMap = useMemo(() => {
-    const map: Record<string, DayStatus> = {};
-    const grouped: Record<string, AvailabilitySubmission[]> = {};
-
-    submissions.forEach((s) => {
-      grouped[s.date] ??= [];
-      grouped[s.date].push(s);
-    });
-
-    Object.entries(grouped).forEach(([date, subs]) => {
-      const names = new Set(subs.map(s => s.name));
-      if (names.size === CHARACTER_NAMES.length) {
-        map[date] = subs.every(s => s.isAllDay)
-          ? DayStatus.GREEN
-          : DayStatus.YELLOW;
-      } else if (names.size > 0) {
-        map[date] = DayStatus.ORANGE;
-      }
-    });
-
-    return map;
+@@ -194,6 +215,9 @@ const App: React.FC = () => {
   }, [submissions]);
 
-  /* ================= LOGIN ================= */
-
   if (!isAuthenticated) {
+    // Ensure idle cat when landing here
+    gate("idle");
+
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4">
-        <div className="w-full max-w-md text-center space-y-6">
-
-          <h1 className="text-5xl font-cinzel text-[#b08d57]">DRACOWEST</h1>
-
-          <form onSubmit={handlePasscodeSubmit} className="space-y-6">
-            <input
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+@@ -231,7 +255,13 @@ const App: React.FC = () => {
               type="password"
-              value={passcodeInput}
               placeholder="Enter Secret Incantation"
+              value={passcodeInput}
               onChange={(e) => setPasscodeInput(e.target.value)}
-              className={`w-full text-center text-xl py-4 bg-black border-b-2
-                ${passcodeError
-                  ? "border-red-500 text-red-400"
-                  : "border-[#b08d57] text-[#b08d57]"}`}
-            />
+              onChange={(e) => {
+                const v = e.target.value;
+                setPasscodeInput(v);
 
-            <button className="w-full py-4 bg-[#b08d57] text-black font-bold">
+                if (v.length === 0) gate("idle");
+                else gate("typing");
+              }}
+              className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none transition-all duration-500
+                ${passcodeError ? 'border-rose-500 text-rose-500 animate-shake' : 'border-stone-800 text-[#b08d57] focus:border-[#b08d57] focus:bg-stone-900'}
+              `}
+@@ -243,6 +273,14 @@ const App: React.FC = () => {
+            >
               SPEAK INCANTATION
             </button>
 
+            {/* Gatekeeper Cat UNDER the button */}
             <GatekeeperCat
               idleSrc="/gate/idle.png"
               successSrc="/gate/granted.png"
               failSrc="/gate/denied.png"
+              enableSound={false}
             />
           </form>
         </div>
       </div>
-    );
-  }
-
-  /* ================= MAIN ================= */
-
-  const selectedDateStr = selectedDate?.toISOString().split("T")[0] ?? null;
-
-  return (
-    <div className="min-h-screen pb-24">
-      <main className="max-w-7xl mx-auto px-6">
-        {isLoading ? (
-          <div className="py-32 text-center text-[#b08d57]">
-            Loading…
-          </div>
-        ) : (
-          <CalendarGrid
-            startMonth={0}
-            startYear={TARGET_YEAR}
-            numMonths={12}
-            dayStatusMap={dayStatusMap}
-            onDayClick={handleDayClick}
-          />
-        )}
-      </main>
-
-      {isModalOpen && selectedDate && selectedDateStr && (
-        <SubmissionModal
-          date={selectedDate}
+@@ -334,7 +372,6 @@ const App: React.FC = () => {
           onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddSubmission}
           existingSubmissions={submissions.filter(s => s.date === selectedDateStr)}
+          // ✅ NEW PROP
+          onDelete={handleDeleteSubmission}
         />
       )}
-    </div>
-  );
-};
-
-export default App;
