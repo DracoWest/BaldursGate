@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-type GatekeeperState = "idle" | "success" | "fail";
+type GatekeeperState = "idle" | "typing" | "success" | "fail";
 
 interface GatekeeperCatProps {
   idleSrc: string;
@@ -22,23 +22,24 @@ const GatekeeperCat: React.FC<GatekeeperCatProps> = ({
       ? successSrc
       : state === "fail"
       ? failSrc
-      : idleSrc;
+      : idleSrc; // idle + typing both show idle image
 
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (!detail?.state) return;
+      const next = detail?.state as GatekeeperState | undefined;
+      if (!next) return;
 
-      setState(detail.state);
+      setState(next);
 
-      if (detail.state !== "idle") {
+      // Only success/fail should snap back to idle
+      if (next === "success" || next === "fail") {
         setTimeout(() => setState("idle"), 1200);
       }
     };
 
     window.addEventListener("dracowest:gatekeeper", handler);
-    return () =>
-      window.removeEventListener("dracowest:gatekeeper", handler);
+    return () => window.removeEventListener("dracowest:gatekeeper", handler);
   }, []);
 
   return (
@@ -54,9 +55,8 @@ const GatekeeperCat: React.FC<GatekeeperCatProps> = ({
           }
         `}
       >
-        {/* KEY IS THE FIX */}
         <img
-          key={state} 
+          key={state}
           src={src}
           alt="Gatekeeper"
           className={`w-full h-full object-cover
@@ -72,6 +72,8 @@ const GatekeeperCat: React.FC<GatekeeperCatProps> = ({
       <div className="text-[10px] tracking-[0.2em] uppercase text-stone-500">
         {state === "idle"
           ? "Awaiting an incantation…"
+          : state === "typing"
+          ? "The gatekeeper watches…"
           : state === "success"
           ? "Access granted."
           : "Access denied."}
