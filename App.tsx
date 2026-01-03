@@ -37,6 +37,11 @@ const App: React.FC = () => {
     if (session === 'true') setIsAuthenticated(true);
   }, []);
 
+  // ✅ Only set idle when we ENTER the unauthenticated screen (not every re-render)
+  useEffect(() => {
+    if (!isAuthenticated) gate("idle");
+  }, [isAuthenticated]);
+
   const handlePasscodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -217,9 +222,6 @@ const App: React.FC = () => {
   }, [submissions]);
 
   if (!isAuthenticated) {
-    // Ensure idle cat when landing here
-    gate("idle");
-
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-20 pointer-events-none">
