@@ -1,23 +1,21 @@
-import React, { useState, useEffect, useMemo } from "react";
-import GatekeeperCat from "./components/GatekeeperCat";
-import { AvailabilitySubmission, DayStatus } from "./types";
-import CalendarGrid from "./components/CalendarGrid";
-import SubmissionModal from "./components/SubmissionModal";
-import { CHARACTER_NAMES } from "./constants";
-import { supabase } from "./supabaseClient";
+import React, { useState, useEffect, useMemo } from 'react';
+import { AvailabilitySubmission, DayStatus } from './types';
+import CalendarGrid from './components/CalendarGrid';
+import SubmissionModal from './components/SubmissionModal';
+import { CHARACTER_NAMES } from './constants';
+import { supabase } from './supabaseClient';
 
-/* ---------------- CONFIG ---------------- */
+// --- PASSWORD CONFIGURATION ---
+const SITE_PASSCODE = 'karaisqueen';
+// ------------------------------
 
-const SITE_PASSCODE = "karaisqueen";
+// --- YEAR LOCK ---
 const TARGET_YEAR = 2026;
-
-type GateState = "idle" | "typing" | "success" | "fail";
-
-/* ---------------- APP ---------------- */
+// ----------------
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passcodeInput, setPasscodeInput] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [passcodeInput, setPasscodeInput] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [submissions, setSubmissions] = useState<AvailabilitySubmission[]>([]);
@@ -26,90 +24,57 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  /* -------- Gatekeeper bridge -------- */
-
-  const gate = (state: GateState) => {
-    window.dispatchEvent(
-      new CustomEvent("dracowest:gatekeeper", { detail: { state } })
-    );
-  };
-
-  /* -------- Restore auth -------- */
-
   useEffect(() => {
-    if (localStorage.getItem("dracowest_auth") === "true") {
-      setIsAuthenticated(true);
-    }
+    const session = localStorage.getItem('dracowest_auth');
+    if (session === 'true') setIsAuthenticated(true);
   }, []);
-
-  /* -------- Initial gate state (IMPORTANT) -------- */
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      gate("idle");
-    }
-  }, [isAuthenticated]);
-
-  /* -------- Passcode submit -------- */
 
   const handlePasscodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (passcodeInput === SITE_PASSCODE) {
-      gate("success");
+      setIsAuthenticated(true);
+      localStorage.setItem('dracowest_auth', 'true');
       setPasscodeError(false);
-
-      setTimeout(() => {
-        localStorage.setItem("dracowest_auth", "true");
-        setIsAuthenticated(true);
-      }, 650);
     } else {
-      gate("fail");
       setPasscodeError(true);
-      setPasscodeInput("");
-
-      setTimeout(() => {
-        setPasscodeError(false);
-        gate("idle");
-      }, 1200);
+      setPasscodeInput('');
+      setTimeout(() => setPasscodeError(false), 2000);
     }
   };
 
-  /* -------- Date guards -------- */
-
-  const is2026DateString = (d: string) =>
-    typeof d === "string" && d.startsWith(`${TARGET_YEAR}-`);
+  const is2026DateString = (dateStr: string) => {
+    // expects YYYY-MM-DD
+    return typeof dateStr === 'string' && dateStr.startsWith(`${TARGET_YEAR}-`);
+  };
 
   const is2026Date = (d: Date) => d.getFullYear() === TARGET_YEAR;
 
-  /* -------- Fetch submissions -------- */
-
-  const fetchSubmissions = async (manual = false) => {
-    manual ? setIsRefreshing(true) : setIsLoading(true);
+  const fetchSubmissions = async (isManual = false) => {
+    if (isManual) setIsRefreshing(true);
+    else setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.from("availability").select("*");
+      const { data, error } = await supabase.from('availability').select('*');
       if (error) throw error;
 
-      const mapped: AvailabilitySubmission[] = (data || [])
-        .map((item: any) => ({
-          id: item.id ?? crypto.randomUUID(),
+      if (data) {
+        const mappedData = data.map((item: any) => ({
+          id: item.id || Math.random().toString(36).substr(2, 9),
           name: item.name,
           date: item.date,
-          timezone: item.timezone ?? "UTC",
-          isAllDay:
-            item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
-          startTime:
-            item.start_time ?? item.startTime ?? item.starttime ?? "00:00",
-          endTime:
-            item.end_time ?? item.endTime ?? item.endtime ?? "23:59",
-          comments: item.comments ?? "",
-        }))
-        .filter(s => is2026DateString(s.date));
+          timezone: item.timezone || 'UTC',
+          isAllDay: item.is_all_day ?? item.isAllDay ?? item.isallday ?? true,
+          startTime: item.start_time ?? item.startTime ?? item.starttime ?? '00:00',
+          endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59',
+          comments: item.comments || ''
+        })) as AvailabilitySubmission[];
 
-      setSubmissions(mapped);
-    } catch (err) {
-      console.error("Fetch error:", err);
+        // ✅ HARD FILTER: only keep 2026 entries
+        const only2026 = mappedData.filter(s => is2026DateString(s.date));
+        setSubmissions(only2026);
+      }
+    } catch (e: any) {
+      console.error('Fetch error:', e);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -117,214 +82,249 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    fetchSubmissions();
-    const t = setInterval(fetchSubmissions, 1000 * 60 * 5);
-    return () => clearInterval(t);
+    if (isAuthenticated) {
+      fetchSubmissions();
+      const interval = setInterval(() => fetchSubmissions(), 1000 * 60 * 5);
+      return () => clearInterval(interval);
+    }
   }, [isAuthenticated]);
 
-  /* -------- Add / Update -------- */
-
   const handleAddSubmission = async (submission: AvailabilitySubmission) => {
+    // ✅ Block saving anything outside 2026
     if (!is2026DateString(submission.date)) {
-      alert(`Only ${TARGET_YEAR} is allowed.`);
+      alert(`Only ${TARGET_YEAR} is allowed in this calendar.`);
       return;
     }
 
-    const prev = [...submissions];
+    const prevSubmissions = [...submissions];
 
-    setSubmissions(s =>
-      [...s.filter(x => !(x.date === submission.date && x.name === submission.name)), submission]
-    );
+    setSubmissions(prev => {
+      const filtered = prev.filter(s => !(s.date === submission.date && s.name === submission.name));
+      return [...filtered, submission];
+    });
 
-    const payloads = [
-      {
-        name: submission.name,
-        date: submission.date,
-        timezone: submission.timezone,
-        is_all_day: submission.isAllDay,
-        start_time: submission.startTime,
-        end_time: submission.endTime,
-        comments: submission.comments,
-      },
-      {
-        name: submission.name,
-        date: submission.date,
-        timezone: submission.timezone,
-        isAllDay: submission.isAllDay,
-        startTime: submission.startTime,
-        endTime: submission.endTime,
-        comments: submission.comments,
-      },
+    const basePayload = {
+      name: submission.name,
+      date: submission.date,
+      timezone: submission.timezone,
+      comments: submission.comments || ''
+    };
+
+    const strategies = [
+      { ...basePayload, is_all_day: submission.isAllDay, start_time: submission.startTime, end_time: submission.endTime },
+      { ...basePayload, isallday: submission.isAllDay, starttime: submission.startTime, endtime: submission.endTime },
+      { ...basePayload, isAllDay: submission.isAllDay, startTime: submission.startTime, endTime: submission.endTime }
     ];
 
-    let saved = false;
-    let lastErr: any = null;
+    let success = false;
+    let lastError: any = null;
 
-    for (const p of payloads) {
-      const { error } = await supabase
-        .from("availability")
-        .upsert(p, { onConflict: "date,name" });
-
+    for (const payload of strategies) {
+      const { error } = await supabase.from('availability').upsert(payload, { onConflict: 'date,name' });
       if (!error) {
-        saved = true;
+        success = true;
         break;
       }
-      lastErr = error;
+      lastError = error;
     }
 
-    if (!saved) {
-      console.error(lastErr);
-      setSubmissions(prev);
-      alert("Save failed.");
+    if (!success) {
+      console.error('Final Save Error:', lastError);
+      alert(`The Weave is blocked. Error: ${lastError?.message || 'Check Supabase columns'}`);
+      setSubmissions(prevSubmissions);
     }
 
     setIsModalOpen(false);
   };
 
-  /* -------- Delete -------- */
-
-  const handleDeleteSubmission = async (date: string, name: string) => {
+  // ✅ DELETE handler
+  const handleDeleteSubmission = async (dateStr: string, name: string) => {
+    // optimistic UI
     const prev = [...submissions];
-    setSubmissions(s => s.filter(x => !(x.date === date && x.name === name)));
+    setSubmissions(prevSubs => prevSubs.filter(s => !(s.date === dateStr && s.name === name)));
 
     const { error } = await supabase
-      .from("availability")
+      .from('availability')
       .delete()
-      .eq("date", date)
-      .eq("name", name);
+      .eq('date', dateStr)
+      .eq('name', name);
 
     if (error) {
-      console.error(error);
-      alert("Delete failed.");
+      console.error('Delete error:', error);
+      alert(`Could not remove entry: ${error.message}`);
       setSubmissions(prev);
+      return;
     }
   };
 
-  /* -------- Calendar click -------- */
-
   const handleDayClick = (date: Date) => {
+    // ✅ Block opening modal outside 2026
     if (!is2026Date(date)) return;
     setSelectedDate(date);
     setIsModalOpen(true);
   };
 
-  /* -------- Status map -------- */
-
   const dayStatusMap = useMemo(() => {
     const map: Record<string, DayStatus> = {};
-    const grouped: Record<string, AvailabilitySubmission[]> = {};
+    const groupedByDate: Record<string, AvailabilitySubmission[]> = {};
 
-    submissions.forEach(s => {
-      grouped[s.date] ??= [];
-      grouped[s.date].push(s);
-    });
+    // ✅ Only consider 2026 in status map too
+    submissions
+      .filter(s => is2026DateString(s.date))
+      .forEach(s => {
+        if (!groupedByDate[s.date]) groupedByDate[s.date] = [];
+        groupedByDate[s.date].push(s);
+      });
 
-    Object.entries(grouped).forEach(([date, subs]) => {
-      const names = new Set(subs.map(s => s.name));
-      if (names.size === CHARACTER_NAMES.length) {
-        map[date] = subs.every(s => s.isAllDay)
-          ? DayStatus.GREEN
-          : DayStatus.YELLOW;
-      } else if (names.size > 0) {
-        map[date] = DayStatus.ORANGE;
+    Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
+      const distinctNames = new Set(subs.map(s => s.name));
+      const count = distinctNames.size;
+
+      if (count === CHARACTER_NAMES.length) {
+        const allDayCommitment = subs.every(s => s.isAllDay);
+        map[dateStr] = allDayCommitment ? DayStatus.GREEN : DayStatus.YELLOW;
+      } else if (count > 0) {
+        map[dateStr] = DayStatus.ORANGE;
+      } else {
+        map[dateStr] = DayStatus.NONE;
       }
     });
 
     return map;
   }, [submissions]);
 
-  /* ================= LOGIN SCREEN ================= */
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4 relative overflow-hidden">
-        <div className="w-full max-w-md text-center space-y-6 z-10">
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#b08d57] blur-[150px] rounded-full opacity-50"></div>
+        </div>
 
-          <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow">
-            DRACOWEST
-          </h1>
+        <div className="w-full max-w-md z-10 text-center">
+          <div className="mb-10 relative inline-block">
+            <div className="w-24 h-24 mx-auto border-2 border-[#b08d57] rotate-45 flex items-center justify-center animate-gold mb-8">
+              <span className="text-4xl -rotate-45">⚔️</span>
+            </div>
 
-      <form onSubmit={handlePasscodeSubmit} className="space-y-6">
-  <input
-    type="password"
-    placeholder="Enter Secret Incantation"
-    value={passcodeInput}
-    onChange={(e) => {
-      const v = e.target.value;
-      setPasscodeInput(v);
-      gate(v.length ? "typing" : "idle");
-    }}
-    className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none transition-all duration-500
-      ${passcodeError ? 'border-rose-500 text-rose-500 animate-shake' : 'border-stone-800 text-[#b08d57] focus:border-[#b08d57] focus:bg-stone-900'}
-    `}
-    autoFocus
-  />
+            <h1 className="text-5xl font-cinzel text-[#b08d57] parchment-glow mb-2 tracking-widest">
+              DRACOWEST
+            </h1>
 
-  <button
-    type="submit"
-    className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded"
-  >
-    SPEAK INCANTATION
-  </button>
-            <div className="flex justify-center mt-4">
-    <GatekeeperCat
-      idleSrc="/gate/idle.png"
-      successSrc="/gate/granted.png"
-      failSrc="/gate/denied.png"
-    />
-  </div>
-</form>
+            <p className="text-stone-500 font-medieval uppercase text-[10px] tracking-[0.4em]">
+              Ancient Gateway
+            </p>
+
+            <div className="mt-6 max-w-sm mx-auto">
+              <p className="text-stone-400 font-medieval text-sm leading-relaxed">
+                No passcode? Then linger at the threshold.
+                <span className="block mt-2 text-[#b08d57] font-cinzel tracking-wide">
+                  Great things will be revealed when the party is ready.
+                </span>
+              </p>
+              <div className="mt-5 h-px w-40 mx-auto bg-stone-800/80" />
+            </div>
+          </div>
+
+          <form onSubmit={handlePasscodeSubmit} className="space-y-6">
+            <input
+              type="password"
+              placeholder="Enter Secret Incantation"
+              value={passcodeInput}
+              onChange={(e) => setPasscodeInput(e.target.value)}
+              className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none transition-all duration-500
+                ${passcodeError ? 'border-rose-500 text-rose-500 animate-shake' : 'border-stone-800 text-[#b08d57] focus:border-[#b08d57] focus:bg-stone-900'}
+              `}
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded"
+            >
+              SPEAK INCANTATION
+            </button>
+          </form>
         </div>
       </div>
     );
   }
 
-  /* ================= MAIN APP ================= */
-
-  const selectedDateStr = selectedDate?.toISOString().split("T")[0] ?? null;
+  const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : null;
 
   return (
     <div className="min-h-screen pb-24">
-      <header className="pt-16 pb-12 text-center">
-        <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow">
-          DRACOWEST
-        </h1>
+      <header className="pt-16 pb-12 text-center relative px-4 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-[#b08d57]/5 blur-[120px] -z-10 rounded-full"></div>
+        <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow mb-4 tracking-tighter">DRACOWEST</h1>
+        <div className="flex items-center justify-center gap-4 mb-10 text-stone-500 font-medieval uppercase tracking-[0.3em] text-xs">
+          <div className="h-px w-12 bg-stone-800"></div>
+          The {TARGET_YEAR} Chronicles
+          <div className="h-px w-12 bg-stone-800"></div>
+        </div>
 
-        <div className="flex justify-center gap-4 mt-8">
-          <button
-            onClick={() => fetchSubmissions(true)}
-            className="px-8 py-3 bg-[#b08d57] text-black font-bold rounded"
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? "CONSULTING…" : "REFRESH WEAVE"}
-          </button>
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-wrap justify-center gap-4">
+            <button
+              onClick={() => fetchSubmissions(true)}
+              className="px-10 py-4 bg-[#b08d57] text-stone-950 hover:bg-[#c4a169] font-bold rounded font-cinzel"
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}
+            </button>
 
-          <button
-            onClick={() => {
-              localStorage.removeItem("dracowest_auth");
-              window.location.reload();
-            }}
-            className="px-8 py-3 bg-stone-900 border border-stone-700 text-stone-300 rounded"
-          >
-            LOG OUT
-          </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('dracowest_auth');
+                window.location.reload();
+              }}
+              className="px-10 py-4 bg-stone-900 border border-stone-700 text-stone-400 hover:text-stone-200 font-bold rounded font-cinzel transition-all"
+            >
+              LOG OUT
+            </button>
+          </div>
+
+          <div className="max-w-md bg-stone-900/50 p-6 rounded-lg border border-stone-800/50 backdrop-blur-sm">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">Full Party All Day</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">Full Party Limited</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">Partial Party</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                <span className="text-[10px] font-medieval uppercase text-stone-400">No Signups</span>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6">
+      <main className="max-w-7xl mx-auto px-6 space-y-32">
         {isLoading ? (
-          <div className="py-32 text-center text-[#b08d57]">
-            Deciphering Ancient Availability…
+          <div className="flex flex-col items-center justify-center py-32">
+            <div className="w-16 h-16 border-2 border-[#b08d57] border-t-transparent rounded-full animate-spin mb-6"></div>
+            <p className="font-cinzel text-[#b08d57] animate-pulse uppercase text-sm">Deciphering Ancient Availability...</p>
           </div>
         ) : (
-          <CalendarGrid
-            startMonth={0}
-            startYear={TARGET_YEAR}
-            numMonths={12}
-            dayStatusMap={dayStatusMap}
-            onDayClick={handleDayClick}
-          />
+          <section className="relative pb-24">
+            <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
+              <h2 className="text-4xl font-cinzel text-[#b08d57]">{TARGET_YEAR}</h2>
+            </div>
+            <CalendarGrid
+              startMonth={0}
+              startYear={TARGET_YEAR}
+              numMonths={12}
+              dayStatusMap={dayStatusMap}
+              onDayClick={handleDayClick}
+            />
+          </section>
         )}
       </main>
 
@@ -333,8 +333,9 @@ const App: React.FC = () => {
           date={selectedDate}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleAddSubmission}
-          onDelete={handleDeleteSubmission}
           existingSubmissions={submissions.filter(s => s.date === selectedDateStr)}
+          // ✅ NEW PROP
+          onDelete={handleDeleteSubmission}
         />
       )}
     </div>
@@ -342,5 +343,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-
