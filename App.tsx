@@ -9,6 +9,10 @@ import { supabase } from './supabaseClient';
 const SITE_PASSCODE = 'karaisqueen';
 // ------------------------------
 
+// --- YEAR LOCK ---
+const TARGET_YEAR = 2026;
+// ----------------
+
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passcodeInput, setPasscodeInput] = useState('');
@@ -20,14 +24,9 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const now = new Date();
-  const currentMonth = now.getMonth();
-
   useEffect(() => {
     const session = localStorage.getItem('dracowest_auth');
-    if (session === 'true') {
-      setIsAuthenticated(true);
-    }
+    if (session === 'true') setIsAuthenticated(true);
   }, []);
 
   const handlePasscodeSubmit = (e: React.FormEvent) => {
@@ -42,6 +41,13 @@ const App: React.FC = () => {
       setTimeout(() => setPasscodeError(false), 2000);
     }
   };
+
+  const is2026DateString = (dateStr: string) => {
+    // expects YYYY-MM-DD
+    return typeof dateStr === 'string' && dateStr.startsWith(`${TARGET_YEAR}-`);
+  };
+
+  const is2026Date = (d: Date) => d.getFullYear() === TARGET_YEAR;
 
   const fetchSubmissions = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
@@ -61,8 +67,11 @@ const App: React.FC = () => {
           startTime: item.start_time ?? item.startTime ?? item.starttime ?? '00:00',
           endTime: item.end_time ?? item.endTime ?? item.endtime ?? '23:59',
           comments: item.comments || ''
-        }));
-        setSubmissions(mappedData as AvailabilitySubmission[]);
+        })) as AvailabilitySubmission[];
+
+        // ✅ HARD FILTER: only keep 2026 entries
+        const only2026 = mappedData.filter(s => is2026DateString(s.date));
+        setSubmissions(only2026);
       }
     } catch (e: any) {
       console.error('Fetch error:', e);
@@ -81,13 +90,19 @@ const App: React.FC = () => {
   }, [isAuthenticated]);
 
   const handleAddSubmission = async (submission: AvailabilitySubmission) => {
+    // ✅ Block saving anything outside 2026
+    if (!is2026DateString(submission.date)) {
+      alert(`Only ${TARGET_YEAR} is allowed in this calendar.`);
+      return;
+    }
+
     const prevSubmissions = [...submissions];
+
     setSubmissions(prev => {
       const filtered = prev.filter(s => !(s.date === submission.date && s.name === submission.name));
       return [...filtered, submission];
     });
 
-    // TRY MULTIPLE COLUMN NAMING STRATEGIES
     const basePayload = {
       name: submission.name,
       date: submission.date,
@@ -102,7 +117,7 @@ const App: React.FC = () => {
     ];
 
     let success = false;
-    let lastError = null;
+    let lastError: any = null;
 
     for (const payload of strategies) {
       const { error } = await supabase.from('availability').upsert(payload, { onConflict: 'date,name' });
@@ -122,7 +137,29 @@ const App: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  // ✅ DELETE handler
+  const handleDeleteSubmission = async (dateStr: string, name: string) => {
+    // optimistic UI
+    const prev = [...submissions];
+    setSubmissions(prevSubs => prevSubs.filter(s => !(s.date === dateStr && s.name === name)));
+
+    const { error } = await supabase
+      .from('availability')
+      .delete()
+      .eq('date', dateStr)
+      .eq('name', name);
+
+    if (error) {
+      console.error('Delete error:', error);
+      alert(`Could not remove entry: ${error.message}`);
+      setSubmissions(prev);
+      return;
+    }
+  };
+
   const handleDayClick = (date: Date) => {
+    // ✅ Block opening modal outside 2026
+    if (!is2026Date(date)) return;
     setSelectedDate(date);
     setIsModalOpen(true);
   };
@@ -131,10 +168,13 @@ const App: React.FC = () => {
     const map: Record<string, DayStatus> = {};
     const groupedByDate: Record<string, AvailabilitySubmission[]> = {};
 
-    submissions.forEach(s => {
-      if (!groupedByDate[s.date]) groupedByDate[s.date] = [];
-      groupedByDate[s.date].push(s);
-    });
+    // ✅ Only consider 2026 in status map too
+    submissions
+      .filter(s => is2026DateString(s.date))
+      .forEach(s => {
+        if (!groupedByDate[s.date]) groupedByDate[s.date] = [];
+        groupedByDate[s.date].push(s);
+      });
 
     Object.entries(groupedByDate).forEach(([dateStr, subs]) => {
       const distinctNames = new Set(subs.map(s => s.name));
@@ -175,7 +215,6 @@ const App: React.FC = () => {
               Ancient Gateway
             </p>
 
-            {/* NEW WITTY BG-STYLE MESSAGE */}
             <div className="mt-6 max-w-sm mx-auto">
               <p className="text-stone-400 font-medieval text-sm leading-relaxed">
                 No passcode? Then linger at the threshold.
@@ -185,7 +224,6 @@ const App: React.FC = () => {
               </p>
               <div className="mt-5 h-px w-40 mx-auto bg-stone-800/80" />
             </div>
-            {/* END NEW MESSAGE */}
           </div>
 
           <form onSubmit={handlePasscodeSubmit} className="space-y-6">
@@ -211,6 +249,8 @@ const App: React.FC = () => {
     );
   }
 
+  const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : null;
+
   return (
     <div className="min-h-screen pb-24">
       <header className="pt-16 pb-12 text-center relative px-4 overflow-hidden">
@@ -218,7 +258,7 @@ const App: React.FC = () => {
         <h1 className="text-6xl md:text-8xl font-cinzel text-[#b08d57] parchment-glow mb-4 tracking-tighter">DRACOWEST</h1>
         <div className="flex items-center justify-center gap-4 mb-10 text-stone-500 font-medieval uppercase tracking-[0.3em] text-xs">
           <div className="h-px w-12 bg-stone-800"></div>
-          The 2025-2026 Chronicles
+          The {TARGET_YEAR} Chronicles
           <div className="h-px w-12 bg-stone-800"></div>
         </div>
 
@@ -231,8 +271,6 @@ const App: React.FC = () => {
             >
               {isRefreshing ? 'CONSULTING...' : 'REFRESH WEAVE'}
             </button>
-
-            {/* SHARE LINK BUTTON REMOVED */}
 
             <button
               onClick={() => {
@@ -275,42 +313,29 @@ const App: React.FC = () => {
             <p className="font-cinzel text-[#b08d57] animate-pulse uppercase text-sm">Deciphering Ancient Availability...</p>
           </div>
         ) : (
-          <>
-            <section className="relative">
-              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
-                <h2 className="text-4xl font-cinzel text-[#b08d57]">2025</h2>
-              </div>
-              <CalendarGrid
-                startMonth={currentMonth}
-                startYear={2025}
-                numMonths={12 - currentMonth}
-                dayStatusMap={dayStatusMap}
-                onDayClick={handleDayClick}
-              />
-            </section>
-
-            <section className="relative pb-24">
-              <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
-                <h2 className="text-4xl font-cinzel text-[#b08d57]">2026</h2>
-              </div>
-              <CalendarGrid
-                startMonth={0}
-                startYear={2026}
-                numMonths={12}
-                dayStatusMap={dayStatusMap}
-                onDayClick={handleDayClick}
-              />
-            </section>
-          </>
+          <section className="relative pb-24">
+            <div className="sticky top-0 z-20 bg-black/80 backdrop-blur py-4 mb-12 border-b border-stone-800/50">
+              <h2 className="text-4xl font-cinzel text-[#b08d57]">{TARGET_YEAR}</h2>
+            </div>
+            <CalendarGrid
+              startMonth={0}
+              startYear={TARGET_YEAR}
+              numMonths={12}
+              dayStatusMap={dayStatusMap}
+              onDayClick={handleDayClick}
+            />
+          </section>
         )}
       </main>
 
-      {isModalOpen && selectedDate && (
+      {isModalOpen && selectedDate && selectedDateStr && (
         <SubmissionModal
           date={selectedDate}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleAddSubmission}
-          existingSubmissions={submissions.filter(s => s.date === selectedDate.toISOString().split('T')[0])}
+          existingSubmissions={submissions.filter(s => s.date === selectedDateStr)}
+          // ✅ NEW PROP
+          onDelete={handleDeleteSubmission}
         />
       )}
     </div>
