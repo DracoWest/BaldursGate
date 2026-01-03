@@ -11,8 +11,6 @@ import { supabase } from "./supabaseClient";
 const SITE_PASSCODE = "karaisqueen";
 const TARGET_YEAR = 2026;
 
-type GateState = "idle" | "typing" | "success" | "fail";
-
 /* ---------------- APP ---------------- */
 
 const App: React.FC = () => {
@@ -25,23 +23,30 @@ const App: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  /* -------- Gatekeeper event bridge -------- */
+  /* -------- Gatekeeper bridge -------- */
 
-  const gate = (state: GateState) => {
+  const gate = (state: "idle" | "success" | "fail") => {
     window.dispatchEvent(
       new CustomEvent("dracowest:gatekeeper", { detail: { state } })
     );
   };
 
-  /* -------- Auth restore -------- */
+  /* -------- Restore auth -------- */
 
   useEffect(() => {
     if (localStorage.getItem("dracowest_auth") === "true") {
       setIsAuthenticated(true);
     }
   }, []);
+
+  /* -------- Ensure idle gate ONCE -------- */
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      gate("idle");
+    }
+  }, [isAuthenticated]);
 
   /* -------- Passcode submit -------- */
 
@@ -77,15 +82,11 @@ const App: React.FC = () => {
 
   /* -------- Fetch submissions -------- */
 
-  const fetchSubmissions = async (manual = false) => {
-    manual ? setIsRefreshing(true) : setIsLoading(true);
+  const fetchSubmissions = async () => {
+    setIsLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("availability")
-        .select("*");
-
-      if (error) throw error;
+      const { data } = await supabase.from("availability").select("*");
 
       const mapped: AvailabilitySubmission[] = (data || [])
         .map((item: any) => ({
@@ -105,98 +106,15 @@ const App: React.FC = () => {
 
       setSubmissions(mapped);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error(err);
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    fetchSubmissions();
-    const t = setInterval(fetchSubmissions, 1000 * 60 * 5);
-    return () => clearInterval(t);
+    if (isAuthenticated) fetchSubmissions();
   }, [isAuthenticated]);
-
-  /* -------- Add / Update -------- */
-
-  const handleAddSubmission = async (submission: AvailabilitySubmission) => {
-    if (!is2026DateString(submission.date)) {
-      alert(`Only ${TARGET_YEAR} is allowed.`);
-      return;
-    }
-
-    const prev = [...submissions];
-
-    setSubmissions((s) =>
-      [...s.filter(x => !(x.date === submission.date && x.name === submission.name)), submission]
-    );
-
-    const payloads = [
-      {
-        name: submission.name,
-        date: submission.date,
-        timezone: submission.timezone,
-        is_all_day: submission.isAllDay,
-        start_time: submission.startTime,
-        end_time: submission.endTime,
-        comments: submission.comments,
-      },
-      {
-        name: submission.name,
-        date: submission.date,
-        timezone: submission.timezone,
-        isAllDay: submission.isAllDay,
-        startTime: submission.startTime,
-        endTime: submission.endTime,
-        comments: submission.comments,
-      },
-    ];
-
-    let saved = false;
-    let lastErr: any = null;
-
-    for (const p of payloads) {
-      const { error } = await supabase
-        .from("availability")
-        .upsert(p, { onConflict: "date,name" });
-
-      if (!error) {
-        saved = true;
-        break;
-      }
-      lastErr = error;
-    }
-
-    if (!saved) {
-      console.error(lastErr);
-      setSubmissions(prev);
-      alert("Save failed.");
-    }
-
-    setIsModalOpen(false);
-  };
-
-  /* -------- Delete -------- */
-
-  const handleDeleteSubmission = async (date: string, name: string) => {
-    const prev = [...submissions];
-    setSubmissions(s => s.filter(x => !(x.date === date && x.name === name)));
-
-    const { error } = await supabase
-      .from("availability")
-      .delete()
-      .eq("date", date)
-      .eq("name", name);
-
-    if (error) {
-      console.error(error);
-      alert("Delete failed.");
-      setSubmissions(prev);
-    }
-  };
 
   /* -------- Calendar click -------- */
 
@@ -231,11 +149,9 @@ const App: React.FC = () => {
     return map;
   }, [submissions]);
 
-  /* ================= LOGIN SCREEN ================= */
+  /* ================= LOGIN ================= */
 
   if (!isAuthenticated) {
-    gate("idle");
-
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0c] px-4">
         <div className="w-full max-w-md text-center space-y-6">
@@ -247,13 +163,11 @@ const App: React.FC = () => {
               type="password"
               value={passcodeInput}
               placeholder="Enter Secret Incantation"
-              onChange={(e) => {
-                const v = e.target.value;
-                setPasscodeInput(v);
-                gate(v.length ? "typing" : "idle");
-              }}
+              onChange={(e) => setPasscodeInput(e.target.value)}
               className={`w-full text-center text-xl py-4 bg-black border-b-2
-                ${passcodeError ? "border-red-500 text-red-400" : "border-[#b08d57] text-[#b08d57]"}`}
+                ${passcodeError
+                  ? "border-red-500 text-red-400"
+                  : "border-[#b08d57] text-[#b08d57]"}`}
             />
 
             <button className="w-full py-4 bg-[#b08d57] text-black font-bold">
@@ -271,7 +185,7 @@ const App: React.FC = () => {
     );
   }
 
-  /* ================= MAIN APP ================= */
+  /* ================= MAIN ================= */
 
   const selectedDateStr = selectedDate?.toISOString().split("T")[0] ?? null;
 
@@ -297,8 +211,6 @@ const App: React.FC = () => {
         <SubmissionModal
           date={selectedDate}
           onClose={() => setIsModalOpen(false)}
-          onSubmit={handleAddSubmission}
-          onDelete={handleDeleteSubmission}
           existingSubmissions={submissions.filter(s => s.date === selectedDateStr)}
         />
       )}
