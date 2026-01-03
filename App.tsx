@@ -46,16 +46,15 @@ const App: React.FC = () => {
     e.preventDefault();
 
     if (passcodeInput === SITE_PASSCODE) {
-      setIsAuthenticated(true);
-      localStorage.setItem('dracowest_auth', 'true');
       gate("success");
       setPasscodeError(false);
 
-      // Let the success animation play before switching screens
+      // ✅ Slower transition so the granted animation is visible
       setTimeout(() => {
         setIsAuthenticated(true);
         localStorage.setItem('dracowest_auth', 'true');
-      }, 650);
+      }, 1400);
+
     } else {
       gate("fail");
 
