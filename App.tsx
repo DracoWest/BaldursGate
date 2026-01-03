@@ -245,27 +245,29 @@ const App: React.FC = () => {
             DRACOWEST
           </h1>
 
-          <form onSubmit={handlePasscodeSubmit} className="space-y-6">
-            <input
-              type="password"
-              value={passcodeInput}
-              placeholder="Enter Secret Incantation"
-              onChange={(e) => {
-                const v = e.target.value;
-                setPasscodeInput(v);
-                gate(v.length ? "typing" : "idle");
-              }}
-              className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none
-                ${passcodeError ? "border-rose-500 text-rose-500" : "border-[#b08d57] text-[#b08d57]"}`}
-              autoFocus
-            />
+      <form onSubmit={handlePasscodeSubmit} className="space-y-6">
+  <input
+    type="password"
+    placeholder="Enter Secret Incantation"
+    value={passcodeInput}
+    onChange={(e) => {
+      const v = e.target.value;
+      setPasscodeInput(v);
+      gate(v.length ? "typing" : "idle");
+    }}
+    className={`w-full bg-stone-900/50 border-b-2 py-4 px-2 text-center text-xl font-cinzel tracking-[0.2em] outline-none transition-all duration-500
+      ${passcodeError ? 'border-rose-500 text-rose-500 animate-shake' : 'border-stone-800 text-[#b08d57] focus:border-[#b08d57] focus:bg-stone-900'}
+    `}
+    autoFocus
+  />
 
-            <button className="w-full py-4 bg-[#b08d57] text-black font-bold font-cinzel rounded">
-              SPEAK INCANTATION
-           </button>
-
-  {/* Gatekeeper sits DIRECTLY under the button */}
-  <div className="mt-4 flex justify-center">
+  <button
+    type="submit"
+    className="w-full py-4 bg-[#b08d57] hover:bg-[#c4a169] text-stone-950 font-bold font-cinzel rounded"
+  >
+    SPEAK INCANTATION
+  </button>
+            <div className="flex justify-center mt-4">
     <GatekeeperCat
       idleSrc="/gate/idle.png"
       successSrc="/gate/granted.png"
@@ -340,4 +342,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
